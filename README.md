@@ -168,13 +168,13 @@ curl -sL https://raw.githubusercontent.com/ron015/termux-panel/master/install.sh
 
 📦 What Happens Automatically:
 
-Step Status Time
-Update Packages ✅ Done ~1min
-Install Node.js ✅ Done ~2min
-Install Python ✅ Done ~1min
-Clone Repository ✅ Done ~30s
-Install Dependencies ✅ Done ~1min
-Launch Panel ✅ Done ~5s
+Step Status Time<br>
+Update Packages ✅ Done ~1min<br>
+Install Node.js ✅ Done ~2min<br>
+Install Python ✅ Done ~1min<br>
+Clone Repository ✅ Done ~30s<br>
+Install Dependencies ✅ Done ~1min<br>
+Launch Panel ✅ Done ~5s<br>
 
 
 Step-by-Step Installation
