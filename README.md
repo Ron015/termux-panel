@@ -1,4 +1,4 @@
-##🚀 Termux Panel - Ultimate Web-Based Project Manager
+<h1>🚀 Termux Panel - Ultimate Web-Based Project Manaer</h1>
 
 <div align="center">
 
@@ -16,9 +16,9 @@ Transform your Termux into a professional development environment!
 
 </div>
 
-✨ Complete Feature Breakdown
+<h2>✨ Complete Feature Breakdown</h2>
 
-🏠 Dashboard & Project Management
+<h3>🏠 Dashboard & Project Management</h3>
 
 - Visual Project Cards with live status indicators (🟢 Running, 🔴 Stopped, 🟡 Restarting)
 - One-Click Controls - Start, Stop, Restart projects instantly
@@ -27,7 +27,7 @@ Transform your Termux into a professional development environment!
 - Theme Switcher - Dark/Light mode with smooth transitions
 - Project Statistics - Creation date, last updated, file counts
 
-💻 Built-in Professional Code Editor
+<h3>💻 Built-in Professional Code Editor</h3>
 
 - Ace Editor Integration with syntax highlighting for 100+ languages
 - Auto-completion & Intelligence - Code like a pro
@@ -38,7 +38,7 @@ Transform your Termux into a professional development environment!
 - Customizable Settings - Font size, tab size, word wrap
 - Auto-save & Recovery - Never lose your work
 
-🗂️ Advanced File Management System
+<h3>🗂️ Advanced File Management System</h3>
 
 - Dual View Modes - Grid view and List view
 - Drag & Drop Upload - Easy file management
@@ -54,7 +54,7 @@ Transform your Termux into a professional development environment!
 - Context Menu - Right-click actions on files
 - Breadcrumb Navigation - Easy folder traversal
 
-⚡ Multi-Language Project Runner
+<h3>⚡ Multi-Language Project Runner</h3>
 
 Language Execution Auto-Restart Package Management<br>
 Node.js node file.js ✅ Yes npm install/uninstall<br>
@@ -62,7 +62,7 @@ Python python -u file.py ✅ Yes pip install/uninstall<br>
 Bash bash file.sh ✅ Yes Built-in scripts<br>
 Custom Configurable ✅ Yes Extensible
 
-📊 Real-time Process Monitoring
+<h3>📊 Real-time Process Monitoring</h3>
 
 - Live Console Output - Colored logs with timestamps
 - Process Status Tracking - Starting, Running, Stopping, Restarting
@@ -71,7 +71,7 @@ Custom Configurable ✅ Yes Extensible
 - WebSocket Live Updates - Real-time status changes
 - Error Handling - Process crash detection and recovery
 
-🔐 Environment & Configuration Management
+<h3>🔐 Environment & Configuration Management</h3>
 
 - Secret Environment Variables - Secure storage with encryption indicators
 - Project Configuration - Customizable settings per project:
@@ -83,7 +83,7 @@ Custom Configurable ✅ Yes Extensible
   - Package management commands
 - Startup Configuration - Custom initialization scripts
 
-📦 Package Management System
+<h3>📦 Package Management System</h3>
 
 - Integrated Package Installation - Direct from panel
 - Multi-language Support:
@@ -92,7 +92,7 @@ Custom Configurable ✅ Yes Extensible
 - Real-time Installation Logs - See package installation progress
 - Batch Operations - Install multiple packages at once
 
-🎯 Advanced File Operations
+<h3>🎯 Advanced File Operations</h3>
 
 - File Upload with Progress - Visual upload progress bars
 - ZIP Archive Management:
@@ -104,7 +104,7 @@ Custom Configurable ✅ Yes Extensible
 - Project Export - Download entire project as ZIP
 - Bulk File Operations - Move, delete, zip multiple files
 
-🌐 Web-Based Terminal Console
+<h3>🌐 Web-Based Terminal Console</h3>
 
 - Real-time Command Execution - Direct terminal access
 - ANSI Color Support - Colored output display
@@ -117,7 +117,7 @@ Custom Configurable ✅ Yes Extensible
   - ansi - ANSI color test
 - Mobile Optimized - Touch-friendly with pinch-to-zoom
 
-🔧 Project Configuration & Settings
+<h3>🔧 Project Configuration & Settings</h3>
 
 - Project Renaming - Change project names with automatic file updates
 - Main File Configuration - Set entry point for each project
@@ -126,14 +126,14 @@ Custom Configurable ✅ Yes Extensible
 - Collaboration Settings - Multi-user editing configuration
 - Shareable Links - Project sharing capabilities
 
-💾 Database & Storage
+<h3>💾 Database & Storage</h3>
 
 - Embedded NeDB Database - No external database required
 - Project Metadata Storage - All project data persisted
 - Settings Management - Panel-wide configuration
 - Automatic Backup - Project data automatically saved
 
-📱 Mobile-First Design
+<h3>📱 Mobile-First Design</h3>
 
 - Responsive Layout - Works perfectly on mobile and desktop
 - Touch Gestures - Swipe, pinch, tap optimized
@@ -142,7 +142,7 @@ Custom Configurable ✅ Yes Extensible
 
 ---
 
-🚀 Installation
+<h3>🚀 Installation</h3>
 
 Prerequisites
 
@@ -157,16 +157,16 @@ Quick Installation (Recommended)
 pkg update && pkg upgrade -y && pkg install nodejs git -y && git clone https://github.com/ron015/termux-panel.git && cd termux-panel && npm install && node index.js
 ```
 
-🚀 One-Click Installation
+<h3>🚀 One-Click Installation</h3>
 
-🔥 Auto-Install Magic Script
+<h3>🔥 Auto-Install Magic Script</h3>
 
 ```bash
 # 🎯 COPY-PASTE THIS SINGLE COMMAND:
 curl -sL https://raw.githubusercontent.com/ron015/termux-panel/master/install.sh | bash
 ```
 
-📦 What Happens Automatically:
+<h3>📦 What Happens Automatically:</h3>
 
 Step Status Time<br>
 Update Packages ✅ Done ~1min<br>
@@ -177,7 +177,7 @@ Install Dependencies ✅ Done ~1min<br>
 Launch Panel ✅ Done ~5s<br>
 
 
-Step-by-Step Installation
+<h3>Step-by-Step Installation</h3>
 
 ```bash
 # 1. Update package repositories
@@ -199,7 +199,7 @@ npm install
 node index.js
 ```
 
-First Time Setup
+<h3>First Time Setup</h3>
 
 1. Grant Storage Permissions (if needed):
    ```bash
@@ -216,7 +216,7 @@ First Time Setup
 
 ---
 
-🎮 Usage Guide
+<h3>🎮 Usage Guide</h3>
 
 Getting Started
 
@@ -235,21 +235,21 @@ Getting Started
    - Click "Start" to run your project
    - Watch real-time output in the terminal
 
-Project Management
+<h3>Project Management</h3>
 
 - Starting Projects: Click "Start" in Console or Dashboard
 - Stopping Projects: Click "Stop" to terminate processes
 - Restarting: Use "Restart" for quick reload
 - Deleting Projects: Use delete button with confirmation
 
-File Management Tips
+<h3>File Management Tips</h3>
 
 - Quick Actions: Long-press files for context menu
 - Bulk Selection: Select multiple files for batch operations
 - Keyboard Shortcuts: Use in editor for faster coding
 - Auto-refresh: Files update in real-time
 
-Environment Variables
+<h3>Environment Variables</h3>
 
 1. Navigate to "Secret" section
 2. Add variable name and value
@@ -258,7 +258,7 @@ Environment Variables
 
 ---
 
-🤝 Contributing
+<h3>🤝 Contributing</h3>
 
 We love contributions from the community! Here's how you can help:
 
@@ -287,7 +287,7 @@ npm install
 node index.js
 ```
 
-Areas for Contribution
+<h3>Areas for Contribution</h3>
 
 - 🐛 Bug Fixes - Help squash those bugs!
 - 💡 New Features - Suggest and implement new functionality
@@ -295,7 +295,7 @@ Areas for Contribution
 - 🎨 UI/UX Improvements - Enhance the user interface
 - 🔧 Performance Optimization - Make it faster and better
 
-Reporting Issues
+<h3>Reporting Issues</h3>
 
 When reporting issues, please include:
 
@@ -307,7 +307,7 @@ When reporting issues, please include:
 
 ---
 
-🙏 Acknowledgments
+<h3>🙏 Acknowledgments</h3>
 
 Special thanks to:
 
@@ -320,13 +320,13 @@ Special thanks to:
 
 ---
 
-📄 License
+<h3>📄 License</h3>
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-👨‍💻 Creator
+<h3>👨‍💻 Creator</h3>
 
 Ron (@ron015)
 
