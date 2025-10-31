@@ -56,10 +56,10 @@ Transform your Termux into a professional development environment!
 
 ⚡ Multi-Language Project Runner
 
-Language Execution Auto-Restart Package Management
-Node.js node file.js ✅ Yes npm install/uninstall
-Python python -u file.py ✅ Yes pip install/uninstall
-Bash bash file.sh ✅ Yes Built-in scripts
+Language Execution Auto-Restart Package Management<br>
+Node.js node file.js ✅ Yes npm install/uninstall<br>
+Python python -u file.py ✅ Yes pip install/uninstall<br>
+Bash bash file.sh ✅ Yes Built-in scripts<br>
 Custom Configurable ✅ Yes Extensible
 
 📊 Real-time Process Monitoring
