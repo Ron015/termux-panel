@@ -4,7 +4,7 @@
   "description": "🔥 Termux GUI Mode — Best Interactive Panel for TERMUX Users 🧠💻",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node index.js"
   },
   "author": "Ron",
   "license": "MIT",
