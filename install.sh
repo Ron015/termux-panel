@@ -67,6 +67,6 @@ echo "alias tp='cd $TP_PATH && node index'" >> "$BASHRC"
 success "Alias 'tp' created! 🧠 Type 'tp' anytime to start Termux Panel ⚡"
 
 # 🎬 Start the project now
-log "Starting Termux Panel 🔥..."
-sleep 1
+log "Starting Termux Panel in 10 second Read uppar message🔥..."
+sleep 10
 node index
