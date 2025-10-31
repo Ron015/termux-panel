@@ -1,0 +1,2679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=0.75, maximum-scale=1.0, user-scalable=no" />
+  <title><%= title %></title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body data-theme="dark">
+  <div class="app">
+    <!-- Smaller Header -->
+    <div class="top-bar">
+      <div class="header-content">
+        <div class="logo">
+          <i class="fas fa-terminal logo-icon"></i>
+          <span id="projectName"><%= project.name %></span>
+        </div>
+        <div class="header-actions">
+          <button class="dashboard-btn" onclick="window.location.href='/'">
+            <i class="fas fa-layer-group"></i>
+          </button>
+          <button id="themeToggle" class="icon-btn" title="Toggle Theme">
+            <i class="fas fa-moon"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Console Section -->
+      
+      <div class="section active" id="console-section">
+        <h2 class="section-title"><i class="fas fa-terminal"></i> Console</h2>
+        <div class="console-toolbar">
+          <button class="console-action-btn" id="startBtn"><i class="fas fa-play"></i> Start</button>
+          <button class="console-action-btn" id="stopBtn" disabled><i class="fas fa-stop"></i> Stop</button>
+          <button class="console-action-btn" id="restartBtn" disabled><i class="fas fa-redo"></i> Restart</button>
+          <div class="server-status" id="serverStatus">Status: <%= project.status %></div>
+        </div>
+        
+        <iframe 
+          src="/project/<%= project.id %>/terminal"
+          id="terminalIframe"
+          class="ron-terminal-frame" 
+          title="Ron's Terminal"
+          loading="lazy">
+        </iframe>
+      </div>
+
+      <!-- Files Section -->
+      <div class="section" id="files-section">
+        <h2 class="section-title"><i class="fas fa-folder"></i> File Manager</h2>
+        <div class="file-manager">
+          <div class="file-toolbar">
+            <button class="file-action-btn primary" id="newFileBtn">
+              <i class="fas fa-file"></i> New File
+            </button>
+            <button class="file-action-btn" id="newFolderBtn">
+              <i class="fas fa-folder-plus"></i> New Folder
+            </button>
+            <button class="file-action-btn" id="uploadBtn">
+              <i class="fas fa-upload"></i> Upload
+            </button>
+            <button class="file-action-btn" id="downloadBtn" disabled>
+              <i class="fas fa-download"></i> Download
+            </button>
+            <button class="file-action-btn" id="moveBtn" disabled>
+              <i class="fas fa-arrows-alt"></i> Move
+            </button>
+            <button class="file-action-btn" id="zipBtn" disabled>
+              <i class="fas fa-archive"></i> Zip
+            </button>
+            <button class="file-action-btn" id="unzipBtn">
+              <i class="fas fa-file-archive"></i> Unzip
+            </button>
+            <button class="file-action-btn" id="deleteBtn" disabled>
+              <i class="fas fa-trash"></i> Delete
+            </button>
+            <button class="file-action-btn" id="refreshBtn">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            
+            <div class="view-toggle">
+              <button class="view-toggle-btn active" id="gridViewBtn" title="Grid View">
+                <i class="fas fa-th"></i>
+              </button>
+              <button class="view-toggle-btn" id="listViewBtn" title="List View">
+                <i class="fas fa-list"></i>
+              </button>
+            </div>
+            
+            <div class="selection-info" id="selectionInfo">
+              No items selected
+            </div>
+          </div>
+          
+          <div class="file-path" id="filePath">
+            <span class="path-segment" data-path="/">Root</span>
+          </div>
+          
+          <!-- Grid View -->
+          <div class="file-grid" id="fileGrid">
+            <!-- Files and folders will be populated here -->
+          </div>
+          
+          <!-- List View -->
+          <div class="file-list-view" id="fileListView">
+            <div class="file-list-header">
+              <div class="header-name">Name</div>
+              <div class="header-type">Type</div>
+              <div class="header-size">Size</div>
+              <div class="header-modified">Modified</div>
+              <div class="header-actions"></div>
+            </div>
+            <div class="file-list-items" id="fileListItems">
+              <!-- List items will be populated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- File Viewer Modal -->
+    <div class="file-viewer" id="fileViewer" style="display: none;">
+      <div class="file-viewer-header">
+        <div class="file-viewer-title" id="fileViewerTitle">
+          <i class="fas fa-file"></i> File Name
+        </div>
+        <button class="file-viewer-close" id="fileViewerClose">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="file-viewer-content">
+        <div class="file-content" id="fileContent">
+          <iframe id="fileViewerIframe" src=""></iframe>
+        </div>
+      </div>
+      <div class="file-actions-bar">
+        <button class="file-action-btn" id="cancelEdit">Cancel</button>
+        <button class="file-action-btn primary" id="saveFile">Save Changes</button>
+      </div>
+    </div>
+      <!-- Secret Section -->
+      <div class="section" id="secret-section">
+        <h2 class="section-title"><i class="fas fa-user-secret"></i> Environment Variables</h2>
+        <div class="env-variables">
+          <div class="env-header">
+            <h3>Secret Environment Variables</h3>
+            <div class="env-header-actions">
+              <button class="file-action-btn" id="addEnvVar">
+                <i class="fas fa-plus"></i> Add Variable
+              </button>
+              <button class="file-action-btn primary" id="saveEnvVars" disabled>
+                <i class="fas fa-save"></i> <span>Save Variables</span>
+              </button>
+            </div>
+          </div>
+          <div class="env-list" id="envList">
+            <!-- Environment variables will be populated here -->
+          </div>
+        </div>
+      </div>
+
+        <!-- Startup Section -->
+        <div class="section" id="startup-section">
+          <h2 class="section-title"><i class="fas fa-play-circle"></i> Startup Configuration</h2>
+          <div class="startup-form">
+            <div class="form-group">
+              <label class="form-label" for="mainFile">Main File</label>
+              <input type="text" id="mainFile" class="form-input" value="<%= projectConfig.mainFile || '' %>" placeholder="e.g., index.js, main.py, app.py">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="installPackages">Install Packages</label>
+              <textarea id="installPackages" class="form-input form-textarea" placeholder="Enter package names, with space (e.g., express react django)"></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="uninstallPackages">Uninstall Packages</label>
+              <textarea id="uninstallPackages" class="form-input form-textarea" placeholder="Enter package names to uninstall, with space"></textarea>
+            </div>
+            
+            <!-- Install Dependency Button - Only shown when relevant file exists -->
+            <div class="form-group" id="installDependencyGroup" style="display: none;">
+              <label class="form-label">Install Dependencies</label>
+              <button class="file-action-btn primary" id="installDependencyBtn">
+                <i class="fas fa-download"></i> <span id="dependencyBtnText">Install Dependencies</span>
+              </button>
+              <div class="form-hint" id="dependencyHint">Automatically install dependencies from dependency file</div>
+            </div>
+            
+            <div class="form-actions">
+              <button class="file-action-btn" id="resetStartup">Reset</button>
+              <button class="file-action-btn primary" id="saveStartup">Save Configuration</button>
+              <button class="file-action-btn" id="installBtn">Install Packages</button>
+              <button class="file-action-btn" id="uninstallBtn">Uninstall Packages</button>
+            </div>
+          </div>
+        </div>
+
+      <!-- Settings Section -->
+      <div class="section" id="settings-section">
+        <h2 class="section-title"><i class="fas fa-cog"></i> Settings</h2>
+        <div class="settings-panel">
+          <div class="setting-item">
+            <h3>Project Settings</h3>
+            <div class="form-group">
+              <label class="form-label" for="projectNameInput">Project Name</label>
+              <input type="text" id="projectNameInput" class="form-input" value="<%= project.name %>">
+            </div>
+            <div class="form-actions">
+              <button class="file-action-btn primary" id="saveProjectName">Save Name</button>
+            </div>
+          </div>
+          
+          <div class="setting-item">
+            <h3>Collaboration</h3>
+            <div class="form-group">
+              <label class="form-label">Enable Multi-User Editing</label>
+              <div>
+                <input type="checkbox" id="multiUserEditing" checked>
+                <label for="multiUserEditing">Allow multiple users to edit simultaneously</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Share Link</label>
+              <div class="share-link">
+                <input type="text" class="share-link-input" id="shareLink" value="https://devconsole.example.com/project/<%= project.id %>" readonly>
+                <button class="file-action-btn" id="copyShareLink">Copy</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="setting-item">
+            <h3>Danger Zone</h3>
+            <p>Once you delete a project, there is no going back. Please be certain.</p>
+            <div class="form-actions">
+              <button class="file-action-btn" id="deleteProject" style="background-color: var(--danger-color); border-color: var(--danger-color);">
+                <i class="fas fa-trash"></i> Delete Project
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer class="copyright-footer">
+        <div class="footer-content">
+            <div class="copyright-text">
+                &copy; 2025 Ron. All rights reserved.
+            </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="file-context-menu" id="fileContextMenu">
+      <div class="context-menu-item" data-action="open">
+        <i class="fas fa-folder-open"></i> Open
+      </div>
+      <div class="context-menu-item" data-action="rename">
+        <i class="fas fa-edit"></i> Rename
+      </div>
+      <div class="context-menu-item" data-action="move">
+        <i class="fas fa-arrows-alt"></i> Move
+      </div>
+      <div class="context-menu-item" data-action="download">
+        <i class="fas fa-download"></i> Download
+      </div>
+      <div class="context-menu-item" data-action="zip">
+        <i class="fas fa-archive"></i> Create Zip
+      </div>
+      <div class="context-menu-item delete" data-action="delete">
+        <i class="fas fa-trash"></i> Delete
+      </div>
+    </div>
+
+    <!-- Custom Modals -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- New File Modal -->
+    <div class="modal" id="newFileModal">
+      <div class="modal-header">
+        <div class="modal-title">Create New File</div>
+        <button class="close-modal" id="closeNewFileModal"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="newFileForm">
+        <div class="form-group">
+          <label for="fileNameInput">File Name</label>
+          <input type="text" id="fileNameInput" name="fileName" class="form-control" placeholder="Enter file name" required>
+          <div class="form-hint">Use only letters, numbers, underscores, hyphens, and dots</div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancelNewFile">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create File</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- New Folder Modal -->
+    <div class="modal" id="newFolderModal">
+      <div class="modal-header">
+        <div class="modal-title">Create New Folder</div>
+        <button class="close-modal" id="closeNewFolderModal"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="newFolderForm">
+        <div class="form-group">
+          <label for="folderNameInput">Folder Name</label>
+          <input type="text" id="folderNameInput" name="folderName" class="form-control" placeholder="Enter folder name" required>
+          <div class="form-hint">Use only letters, numbers, underscores, and hyphens</div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancelNewFolder">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Folder</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Move Modal -->
+    <div class="modal" id="moveModal">
+      <div class="modal-header">
+        <div class="modal-title">Move Items</div>
+        <button class="close-modal" id="closeMoveModal"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="move-info">
+          <p id="moveItemsInfo">Moving <span id="moveItemsCount">0</span> item(s)</p>
+        </div>
+        <div class="form-group">
+          <label for="moveTargetPath">Target Folder</label>
+          <div class="path-input-group">
+            <input type="text" id="moveTargetPath" class="form-control" placeholder="Enter target folder path" value="">
+            <button type="button" class="btn btn-outline" id="browseMovePath">
+              <i class="fas fa-folder-open"></i> Browse
+            </button>
+          </div>
+          <div class="form-hint">Enter the destination folder path where you want to move the items</div>
+        </div>
+        <div class="folder-browser" id="folderBrowser" style="display: none;">
+          <div class="folder-browser-header">
+            <h4>Select Destination Folder</h4>
+            <button type="button" class="btn btn-sm" id="closeFolderBrowser">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="folder-browser-content" id="folderBrowserContent">
+            <!-- Folder tree will be populated here -->
+          </div>
+          <div class="folder-browser-actions">
+            <button type="button" class="btn btn-primary" id="selectFolder">Select Folder</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="cancelMove">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmMove">Move Items</button>
+      </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div class="modal" id="renameModal">
+      <div class="modal-header">
+        <div class="modal-title">Rename</div>
+        <button class="close-modal" id="closeRenameModal"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="renameForm">
+        <div class="form-group">
+          <label for="renameInput">New Name</label>
+          <input type="text" id="renameInput" name="newName" class="form-control" placeholder="Enter new name" required>
+          <div class="form-hint" id="renameHint"></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancelRename">Cancel</button>
+          <button type="submit" class="btn btn-primary">Rename</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+      <div class="modal-header">
+        <div class="modal-title">Upload Files</div>
+        <button class="close-modal" id="closeUploadModal"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="upload-area" id="uploadArea">
+          <i class="fas fa-cloud-upload-alt upload-icon"></i>
+          <h3>Drop files here or click to browse</h3>
+          <p>Supports single or multiple files, including ZIP archives</p>
+          <input type="file" id="fileInput" multiple style="display: none;">
+          <button class="file-action-btn primary" id="browseFilesBtn">
+            <i class="fas fa-folder-open"></i> Browse Files
+          </button>
+        </div>
+        <div class="upload-options">
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="extractZip" checked>
+              Automatically extract ZIP files
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="uploadTargetPath">Target Folder (optional)</label>
+            <input type="text" id="uploadTargetPath" class="form-control" placeholder="Leave empty for current folder">
+          </div>
+        </div>
+        <div class="upload-progress" id="uploadProgress" style="display: none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-text" id="progressText">Uploading...</div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="cancelUpload">Cancel</button>
+        <button type="button" class="btn btn-primary" id="startUpload" disabled>Start Upload</button>
+      </div>
+    </div>
+
+    <!-- Unzip Modal -->
+    <div class="modal" id="unzipModal">
+      <div class="modal-header">
+        <div class="modal-title">Extract ZIP Archive</div>
+        <button class="close-modal" id="closeUnzipModal"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="zipFileSelect">Select ZIP File from Project</label>
+          <select id="zipFileSelect" class="form-control">
+            <option value="">-- Select a ZIP file --</option>
+            <!-- ZIP files will be populated here -->
+          </select>
+          <div class="form-hint">Choose a ZIP file from your project directory</div>
+        </div>
+        <div class="form-group">
+          <label for="unzipTargetPath">Extract to Folder (optional)</label>
+          <input type="text" id="unzipTargetPath" class="form-control" placeholder="Leave empty for current folder">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="overwriteFiles" checked>
+            Overwrite existing files
+          </label>
+        </div>
+        <div class="zip-file-info" id="zipFileInfo" style="display: none;">
+          <div class="file-info-card">
+            <i class="fas fa-file-archive"></i>
+            <div class="file-info-content">
+              <strong id="zipFileName">filename.zip</strong>
+              <small id="zipFileDetails">Size: 0 KB • Modified: -</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="cancelUnzip">Cancel</button>
+        <button type="button" class="btn btn-primary" id="startUnzip" disabled>Extract</button>
+      </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal" id="confirmDeleteModal">
+      <div class="modal-header">
+        <div class="modal-title">Confirm Delete</div>
+        <button class="close-modal" id="closeDeleteModal"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p id="deleteMessage">Are you sure you want to delete this item?</p>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="cancelDelete">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+      </div>
+    </div>
+    
+    <!-- Clean Bottom Bar -->
+    <div class="bottom-bar">
+      <div class="nav-items">
+        <!-- Top sliding indicator only -->
+        <div class="top-indicator"></div>
+        
+        <div class="nav-item active" data-section="console">
+          <i class="fas fa-terminal nav-icon"></i>
+          <span class="nav-label">Console</span>
+        </div>
+        <div class="nav-item" data-section="files">
+          <i class="fas fa-folder nav-icon"></i>
+          <span class="nav-label">Files</span>
+        </div>
+        <div class="nav-item" data-section="secret">
+          <i class="fas fa-user-secret nav-icon"></i>
+          <span class="nav-label">Secret</span>
+        </div>
+        <div class="nav-item" data-section="startup">
+          <i class="fas fa-play-circle nav-icon"></i>
+          <span class="nav-label">Startup</span>
+        </div>
+        <div class="nav-item" data-section="settings">
+          <i class="fas fa-cog nav-icon"></i>
+          <span class="nav-label">Setting</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+    // Project data from EJS
+    const projectId = '<%= project.id %>';
+    const projectName = '<%= project.name %>';
+    const projectLanguage = '<%= project.language %>';
+    const projectStatus = '<%= project.status %>';
+    const projectConfig = <%- JSON.stringify(projectConfig) %>;
+    
+    const socket = io({
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        timeout: 20000
+    });
+
+    // Socket event listeners
+    socket.on('connect', () => {
+        // Join project room
+        socket.emit('join-project', projectId);
+    });
+
+    socket.on('reconnect', (attemptNumber) => {
+        socket.emit('join-project', projectId);
+    });
+    
+    socket.on('project-status', (data) => {
+        if (data.projectId === projectId) {
+            updateStatus(data.status);
+        }
+    });
+
+    // File management variables
+    let contextMenuTarget = null;
+    const fileContextMenu = document.getElementById('fileContextMenu');
+    let currentPath = '';
+    let selectedItems = new Set();
+    let currentEditingFile = null;
+    let currentView = 'grid';
+
+    // Modal Elements
+    const overlay = document.getElementById('overlay');
+    const newFileModal = document.getElementById('newFileModal');
+    const newFolderModal = document.getElementById('newFolderModal');
+    const renameModal = document.getElementById('renameModal');
+    const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+    const uploadModal = document.getElementById('uploadModal');
+    const unzipModal = document.getElementById('unzipModal');
+    const moveModal = document.getElementById('moveModal');
+    const fileViewer = document.getElementById('fileViewer');
+
+    // Upload variables
+    let selectedFiles = [];
+    let uploadInProgress = false;
+
+    // Move variables
+    let moveItems = [];
+    let currentMoveAction = null;
+
+    // Modal state
+    let currentDeleteAction = null;
+    let currentRenameAction = null;
+
+    // Modal Functions
+    function openModal(modal) {
+        modal.classList.add('active');
+        overlay.classList.add('active');
+    }
+
+    function closeModal(modal) {
+        modal.classList.remove('active');
+        overlay.classList.remove('active');
+        if (modal.querySelector('form')) {
+            modal.querySelector('form').reset();
+        }
+    }
+
+    function closeAllModals() {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => modal.classList.remove('active'));
+        overlay.classList.remove('active');
+        selectedFiles = [];
+        updateUploadButton();
+        hideFolderBrowser();
+    }
+
+    // Initialize modal event listeners
+    function initModals() {
+        // New File Modal
+        document.getElementById('newFileBtn').addEventListener('click', () => openModal(newFileModal));
+        document.getElementById('closeNewFileModal').addEventListener('click', () => closeModal(newFileModal));
+        document.getElementById('cancelNewFile').addEventListener('click', () => closeModal(newFileModal));
+
+        // New Folder Modal
+        document.getElementById('newFolderBtn').addEventListener('click', () => openModal(newFolderModal));
+        document.getElementById('closeNewFolderModal').addEventListener('click', () => closeModal(newFolderModal));
+        document.getElementById('cancelNewFolder').addEventListener('click', () => closeModal(newFolderModal));
+
+        // Move Modal
+        document.getElementById('moveBtn').addEventListener('click', showMoveModal);
+        document.getElementById('closeMoveModal').addEventListener('click', () => closeModal(moveModal));
+        document.getElementById('cancelMove').addEventListener('click', () => closeModal(moveModal));
+        document.getElementById('confirmMove').addEventListener('click', handleMoveItems);
+        document.getElementById('browseMovePath').addEventListener('click', showFolderBrowser);
+        document.getElementById('closeFolderBrowser').addEventListener('click', hideFolderBrowser);
+        document.getElementById('selectFolder').addEventListener('click', selectFolder);
+
+        // Upload Modal
+        document.getElementById('uploadBtn').addEventListener('click', () => openModal(uploadModal));
+        document.getElementById('closeUploadModal').addEventListener('click', () => closeModal(uploadModal));
+        document.getElementById('cancelUpload').addEventListener('click', () => closeModal(uploadModal));
+
+        // Unzip Modal
+        document.getElementById('unzipBtn').addEventListener('click', () => openModal(unzipModal));
+        document.getElementById('closeUnzipModal').addEventListener('click', () => closeModal(unzipModal));
+        document.getElementById('cancelUnzip').addEventListener('click', () => closeModal(unzipModal));
+
+        // Rename Modal
+        document.getElementById('closeRenameModal').addEventListener('click', () => closeModal(renameModal));
+        document.getElementById('cancelRename').addEventListener('click', () => closeModal(renameModal));
+
+        // Delete Modal
+        document.getElementById('closeDeleteModal').addEventListener('click', () => closeModal(confirmDeleteModal));
+        document.getElementById('cancelDelete').addEventListener('click', () => closeModal(confirmDeleteModal));
+
+        // Overlay click to close modals
+        overlay.addEventListener('click', closeAllModals);
+
+        // Form submissions
+        document.getElementById('newFileForm').addEventListener('submit', handleNewFileSubmit);
+        document.getElementById('newFolderForm').addEventListener('submit', handleNewFolderSubmit);
+        document.getElementById('renameForm').addEventListener('submit', handleRenameSubmit);
+        document.getElementById('confirmDelete').addEventListener('click', handleConfirmDelete);
+
+        // Upload functionality
+        initUploadModal();
+        initUnzipModal();
+        
+        // File viewer functionality
+        document.getElementById('fileViewerClose').addEventListener('click', closeFileViewer);
+        document.getElementById('cancelEdit').addEventListener('click', closeFileViewer);
+        document.getElementById('saveFile').addEventListener('click', saveFile);
+    }
+
+    // Initialize upload modal functionality
+    function initUploadModal() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const browseFilesBtn = document.getElementById('browseFilesBtn');
+        const startUploadBtn = document.getElementById('startUpload');
+
+        // Browse files button
+        // File input change
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFileDrop(e.dataTransfer.files);
+        });
+
+        // Click to select files
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // Start upload
+        startUploadBtn.addEventListener('click', startUpload);
+    }
+
+    // Initialize unzip modal functionality
+    function initUnzipModal() {
+        const startUnzipBtn = document.getElementById('startUnzip');
+        const zipFileSelect = document.getElementById('zipFileSelect');
+
+        // Load ZIP files when modal opens
+        document.getElementById('unzipBtn').addEventListener('click', loadZipFiles);
+        
+        // Handle ZIP file selection
+        zipFileSelect.addEventListener('change', handleZipFileSelect);
+        
+        startUnzipBtn.addEventListener('click', handleUnzip);
+    }
+
+    // Load ZIP files from current directory
+    async function loadZipFiles() {
+        const zipFileSelect = document.getElementById('zipFileSelect');
+        const zipFileInfo = document.getElementById('zipFileInfo');
+        
+        zipFileSelect.innerHTML = '<option value="">-- Loading ZIP files... --</option>';
+        zipFileInfo.style.display = 'none';
+        document.getElementById('startUnzip').disabled = true;
+        
+        openModal(unzipModal);
+
+        try {
+            const response = await fetch(`/api/project/${projectId}/files?path=${encodeURIComponent(currentPath)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const zipFiles = data.files.filter(file => 
+                    file.type === 'file' && 
+                    (file.name.toLowerCase().endsWith('.zip') || 
+                     file.name.toLowerCase().endsWith('.rar') ||
+                     file.name.toLowerCase().endsWith('.7z'))
+                );
+                
+                zipFileSelect.innerHTML = '<option value="">-- Select a ZIP file --</option>';
+                
+                if (zipFiles.length === 0) {
+                    zipFileSelect.innerHTML = '<option value="">-- No ZIP files found in current directory --</option>';
+                } else {
+                    zipFiles.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file.name;
+                        option.textContent = file.name;
+                        option.setAttribute('data-size', file.sizeBytes || 0);
+                        option.setAttribute('data-modified', file.modified);
+                        zipFileSelect.appendChild(option);
+                    });
+                }
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            zipFileSelect.innerHTML = '<option value="">-- Error loading files --</option>';
+            console.error('Error loading ZIP files:', error);
+        }
+    }
+
+    // Handle ZIP file selection
+    function handleZipFileSelect() {
+        const zipFileSelect = document.getElementById('zipFileSelect');
+        const zipFileInfo = document.getElementById('zipFileInfo');
+        const startUnzipBtn = document.getElementById('startUnzip');
+        const selectedFile = zipFileSelect.value;
+        
+        if (selectedFile) {
+            const selectedOption = zipFileSelect.options[zipFileSelect.selectedIndex];
+            const fileSize = selectedOption.getAttribute('data-size');
+            const fileModified = selectedOption.getAttribute('data-modified');
+            
+            // Format file size
+            const sizeFormatted = formatFileSize(parseInt(fileSize) || 0);
+            
+            // Format modification date
+            let modifiedFormatted = '-';
+            if (fileModified) {
+                const date = new Date(fileModified);
+                modifiedFormatted = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            }
+            
+            // Update file info display
+            document.getElementById('zipFileName').textContent = selectedFile;
+            document.getElementById('zipFileDetails').textContent = `Size: ${sizeFormatted} • Modified: ${modifiedFormatted}`;
+            zipFileInfo.style.display = 'block';
+            startUnzipBtn.disabled = false;
+        } else {
+            zipFileInfo.style.display = 'none';
+            startUnzipBtn.disabled = true;
+        }
+    }
+
+    // Handle ZIP extraction
+    async function handleUnzip() {
+        const zipFileSelect = document.getElementById('zipFileSelect');
+        const targetPath = document.getElementById('unzipTargetPath').value.trim();
+        const overwrite = document.getElementById('overwriteFiles').checked;
+        const selectedFile = zipFileSelect.value;
+
+        if (!selectedFile) {
+            showToast('Please select a ZIP file', 'warning');
+            return;
+        }
+
+        // Build full path to the ZIP file
+        const zipFilePath = currentPath === '' ? selectedFile : `${currentPath}/${selectedFile}`;
+
+        try {
+            showToast(`Extracting ${selectedFile}...`, 'info');
+
+            const response = await fetch(`/api/project/${projectId}/unzip`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    zipFilePath: zipFilePath,
+                    targetPath: targetPath,
+                    overwrite: overwrite
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showToast(data.message, 'success');
+                closeModal(unzipModal);
+                loadFiles(currentPath);
+                
+                // Show extraction details if available
+                if (data.data) {
+                    const extractedCount = data.data.extractedFiles ? data.data.extractedFiles.length : 0;
+                    const folderCount = data.data.extractedFolders ? data.data.extractedFolders.length : 0;
+                    
+                    if (extractedCount > 0 || folderCount > 0) {
+                        setTimeout(() => {
+                            showToast(`Extracted ${extractedCount} files and ${folderCount} folders`, 'success');
+                        }, 1000);
+                    }
+                }
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            showToast(`Extraction failed: ${error.message}`, 'error');
+        }
+    }
+
+    // Handle file selection
+    function handleFileSelect(e) {
+        const files = Array.from(e.target.files);
+        handleFiles(files);
+    }
+
+    // Handle file drop
+    function handleFileDrop(files) {
+        handleFiles(Array.from(files));
+    }
+
+    // Process selected files
+    function handleFiles(files) {
+        selectedFiles = files;
+        updateUploadButton();
+        
+        const uploadArea = document.getElementById('uploadArea');
+        if (files.length > 0) {
+            const fileList = files.map(file => 
+                `<div class="file-item-preview">
+                    <i class="fas fa-file"></i>
+                    <span>${file.name}</span>
+                    <small>(${formatFileSize(file.size)})</small>
+                </div>`
+            ).join('');
+            
+            uploadArea.innerHTML = `
+                <div class="files-selected">
+                    <i class="fas fa-check-circle success-color"></i>
+                    <h3>${files.length} file${files.length > 1 ? 's' : ''} selected</h3>
+                    <div class="file-list">${fileList}</div>
+                </div>
+            `;
+        } else {
+            uploadArea.innerHTML = `
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <h3>Drop files here or click to browse</h3>
+                <p>Supports single or multiple files, including ZIP archives</p>
+                <button class="file-action-btn primary" id="browseFilesBtn">
+                    <i class="fas fa-folder-open"></i> Browse Files
+                </button>
+            `;
+            // Re-attach event listeners
+            document.getElementById('browseFilesBtn').addEventListener('click', () => 
+                document.getElementById('fileInput').click()
+            );
+        }
+    }
+
+    // Update upload button state
+    function updateUploadButton() {
+        const startUploadBtn = document.getElementById('startUpload');
+        startUploadBtn.disabled = selectedFiles.length === 0 || uploadInProgress;
+    }
+
+    // Start file upload
+    async function startUpload() {
+        if (selectedFiles.length === 0 || uploadInProgress) return;
+
+        uploadInProgress = true;
+        updateUploadButton();
+
+        const extractZip = document.getElementById('extractZip').checked;
+        const targetPath = document.getElementById('uploadTargetPath').value.trim();
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const uploadProgress = document.getElementById('uploadProgress');
+
+        uploadProgress.style.display = 'block';
+        progressFill.style.width = '0%';
+        progressText.textContent = 'Preparing upload...';
+
+        try {
+            const formData = new FormData();
+            
+            // Add all files
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+            
+            // Add options
+            formData.append('extractZip', extractZip.toString());
+            formData.append('targetPath', targetPath);
+
+            const response = await fetch(`/api/project/${projectId}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                progressFill.style.width = '100%';
+                progressText.textContent = 'Upload completed!';
+                
+                showToast(data.message, 'success');
+                
+                // Close modal and refresh file list after a delay
+                setTimeout(() => {
+                    closeModal(uploadModal);
+                    loadFiles(currentPath);
+                }, 1000);
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            progressText.textContent = 'Upload failed!';
+            progressFill.style.backgroundColor = 'var(--danger-color)';
+            showToast(`Upload failed: ${error.message}`, 'error');
+        } finally {
+            uploadInProgress = false;
+            updateUploadButton();
+            
+            // Reset progress after delay
+            setTimeout(() => {
+                uploadProgress.style.display = 'none';
+                progressFill.style.width = '0%';
+                progressFill.style.backgroundColor = '';
+            }, 3000);
+        }
+    }
+
+    // Show move modal
+    function showMoveModal() {
+        if (selectedItems.size === 0) {
+            showToast('Please select items to move', 'warning');
+            return;
+        }
+
+        moveItems = Array.from(selectedItems);
+        document.getElementById('moveItemsCount').textContent = moveItems.length;
+        // Set current path dynamically from JavaScript variable
+        document.getElementById('moveTargetPath').value = currentPath || '';
+        
+        openModal(moveModal);
+    }
+
+    // Show folder browser for move target selection
+    async function showFolderBrowser() {
+        const folderBrowser = document.getElementById('folderBrowser');
+        const folderBrowserContent = document.getElementById('folderBrowserContent');
+        
+        folderBrowser.style.display = 'block';
+        folderBrowserContent.innerHTML = '<div class="loading">Loading folders...</div>';
+        
+        try {
+            // Load folder structure
+            const folders = await loadFolderStructure();
+            folderBrowserContent.innerHTML = '';
+            
+            // Add root folder
+            const rootItem = createFolderTreeItem('', 'Root', folders);
+            folderBrowserContent.appendChild(rootItem);
+            
+        } catch (error) {
+            folderBrowserContent.innerHTML = '<div class="error">Failed to load folders</div>';
+        }
+    }
+
+    // Hide folder browser
+    function hideFolderBrowser() {
+        document.getElementById('folderBrowser').style.display = 'none';
+    }
+
+    // Load folder structure recursively
+    async function loadFolderStructure(path = '') {
+        try {
+            const response = await fetch(`/api/project/${projectId}/files?path=${encodeURIComponent(path)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const folders = data.files.filter(item => item.type === 'folder' && item.name !== '..');
+                const folderStructure = [];
+                
+                for (const folder of folders) {
+                    const fullPath = path === '' ? folder.name : `${path}/${folder.name}`;
+                    const children = await loadFolderStructure(fullPath);
+                    folderStructure.push({
+                        name: folder.name,
+                        path: fullPath,
+                        children: children
+                    });
+                }
+                
+                return folderStructure;
+            }
+            return [];
+        } catch (error) {
+            console.error('Error loading folder structure:', error);
+            return [];
+        }
+    }
+
+    // Create folder tree item
+    function createFolderTreeItem(path, name, children = []) {
+        const item = document.createElement('div');
+        item.className = 'folder-tree-item';
+        
+        const hasChildren = children.length > 0;
+        const expandIcon = hasChildren ? '<i class="fas fa-chevron-right folder-expand"></i>' : '<span class="folder-spacer"></span>';
+        
+        item.innerHTML = `
+            <div class="folder-item-header" data-path="${path}">
+                ${expandIcon}
+                <i class="fas fa-folder folder-icon"></i>
+                <span class="folder-name">${name}</span>
+            </div>
+            <div class="folder-children" style="display: none;"></div>
+        `;
+        
+        const header = item.querySelector('.folder-item-header');
+        const childrenContainer = item.querySelector('.folder-children');
+        
+        // Handle folder selection
+        header.addEventListener('click', (e) => {
+            if (e.target.classList.contains('folder-expand')) {
+                // Toggle expand/collapse only when clicking the expand icon
+                e.stopPropagation();
+                const isExpanded = childrenContainer.style.display !== 'none';
+                
+                if (!isExpanded && childrenContainer.children.length === 0) {
+                    // Populate children
+                    children.forEach(child => {
+                        const childItem = createFolderTreeItem(child.path, child.name, child.children);
+                        childrenContainer.appendChild(childItem);
+                    });
+                }
+                
+                childrenContainer.style.display = isExpanded ? 'none' : 'block';
+                const expandIcon = header.querySelector('.folder-expand');
+                expandIcon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+            } else {
+                // Select folder when clicking anywhere else in the header
+                e.stopPropagation();
+                
+                // Remove selection from other items
+                document.querySelectorAll('.folder-item-header').forEach(h => {
+                    h.classList.remove('selected');
+                });
+                
+                // Select current item
+                header.classList.add('selected');
+            }
+        });
+        
+        // Select folder on double click
+        header.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            const path = header.getAttribute('data-path');
+            document.getElementById('moveTargetPath').value = path;
+            hideFolderBrowser();
+        });
+        
+        return item;
+    }
+
+    // Select folder from browser
+    function selectFolder() {
+        const selectedHeader = document.querySelector('.folder-item-header.selected');
+        if (selectedHeader) {
+            const path = selectedHeader.getAttribute('data-path');
+            document.getElementById('moveTargetPath').value = path;
+            hideFolderBrowser();
+        } else {
+            showToast('Please select a folder', 'warning');
+        }
+    }
+
+    // Handle move items
+    async function handleMoveItems() {
+        const targetPath = document.getElementById('moveTargetPath').value.trim();
+        
+        if (!targetPath) {
+            showToast('Please enter a target folder path', 'warning');
+            return;
+        }
+
+        if (moveItems.length === 0) {
+            showToast('No items selected to move', 'warning');
+            return;
+        }
+
+        try {
+            showToast('Moving items...', 'info');
+            
+            // Move each item individually
+            for (const itemPath of moveItems) {
+                const itemName = itemPath.split('/').pop();
+                const newPath = targetPath === '' ? itemName : `${targetPath}/${itemName}`;
+                
+                // Use rename API to move the item
+                const response = await fetch(`/api/project/${projectId}/rename`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        oldPath: itemPath,
+                        newPath: newPath
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(`Failed to move ${itemName}: ${data.error}`);
+                }
+            }
+            
+            showToast(`Successfully moved ${moveItems.length} item(s)`, 'success');
+            closeModal(moveModal);
+            clearSelections();
+            loadFiles(currentPath);
+            
+        } catch (error) {
+            showToast(`Move failed: ${error.message}`, 'error');
+        }
+    }
+
+    // Navigation functionality
+    const navItems = document.querySelectorAll('.nav-item');
+    const topIndicator = document.querySelector('.top-indicator');
+    const themeToggle = document.getElementById('themeToggle');
+    const sections = document.querySelectorAll('.section');
+
+    // Percentage positions for each nav item (5 items = 20% each)
+    const itemPositions = [
+        { left: '3%' },   // Console - 4% to 20%
+        { left: '23%' },  // Files - 24% to 40%
+        { left: '43%' },  // Secret - 44% to 60%
+        { left: '63%' },  // Startup - 64% to 80%
+        { left: '83%' }   // Setting - 84% to 100%
+    ];
+
+    // Navigation click handler with top indicator sliding
+    navItems.forEach((item, index) => {
+        item.addEventListener('click', () => {
+            // Update active nav item
+            navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+            
+            // Slide top indicator using percentage
+            const position = itemPositions[index];
+            topIndicator.style.left = position.left;
+            
+            // Show corresponding section
+            const sectionName = item.getAttribute('data-section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+                if (section.id === `${sectionName}-section`) {
+                    section.classList.add('active');
+                }
+            });
+            
+            // If files section is activated, load files
+            if (sectionName === 'files') {
+                loadFiles(currentPath);
+            }
+        });
+    });
+
+    // Initialize top indicator position - Start from Console
+    function initTopIndicator() {
+        // Set Console as active
+        navItems.forEach(nav => nav.classList.remove('active'));
+        navItems[0].classList.add('active');
+        
+        // Position indicator at Console
+        const position = itemPositions[0];
+        topIndicator.style.left = position.left;
+    }
+
+    // Load saved theme preference
+    function loadThemePreference() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.body.setAttribute('data-theme', savedTheme);
+            const themeIcon = themeToggle.querySelector('i');
+            themeIcon.className = savedTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        }
+    }
+
+    // File Manager Functionality
+    const fileGrid = document.getElementById('fileGrid');
+    const filePath = document.getElementById('filePath');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const moveBtn = document.getElementById('moveBtn');
+    const zipBtn = document.getElementById('zipBtn');
+    const unzipBtn = document.getElementById('unzipBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const selectionInfo = document.getElementById('selectionInfo');
+    const listViewBtn = document.getElementById('listViewBtn');
+    const gridViewBtn = document.getElementById('gridViewBtn');
+    const fileListItems = document.getElementById('fileListItems');
+    const fileListView = document.getElementById('fileListView');
+
+    // File Viewer Elements
+    const fileViewerTitle = document.getElementById('fileViewerTitle');
+    const fileViewerIframe = document.getElementById('fileViewerIframe');
+
+    // Get file icon based on extension
+    function getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp'];
+        const codeExts = ['js', 'css', 'html', 'py', 'ts', 'json', 'md', 'txt'];
+        
+        if (imageExts.includes(ext)) {
+            return 'fa-file-image';
+        } else if (codeExts.includes(ext)) {
+            return 'fa-file-code';
+        } else {
+            return 'fa-file';
+        }
+    }
+    
+    // Get file type for display
+    function getFileType(filename, isFolder) {
+        if (isFolder) return 'Folder';
+        
+        const ext = filename.split('.').pop().toLowerCase();
+        const typeMap = {
+            'txt': 'Text Document',
+            'md': 'Markdown',
+            'js': 'JavaScript',
+            'css': 'Stylesheet',
+            'html': 'HTML Document',
+            'py': 'Python Script',
+            'ts': 'TypeScript',
+            'json': 'JSON File',
+            'png': 'PNG Image',
+            'jpg': 'JPEG Image',
+            'jpeg': 'JPEG Image',
+            'gif': 'GIF Image',
+            'svg': 'SVG Image',
+            'bmp': 'Bitmap Image'
+        };
+        
+        return typeMap[ext] || 'File';
+    }
+
+    // Get file type class
+    function getFileTypeClass(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp'];
+        const codeExts = ['js', 'css', 'html', 'py', 'ts', 'json', 'md', 'txt'];
+        
+        if (imageExts.includes(ext)) {
+            return 'image';
+        } else if (codeExts.includes(ext)) {
+            return 'code';
+        } else {
+            return 'file';
+        }
+    }
+
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0 || bytes === '-') return '-';
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Update selection info
+    function updateSelectionInfo() {
+        const count = selectedItems.size;
+        if (count === 0) {
+            selectionInfo.textContent = 'No items selected';
+            downloadBtn.disabled = true;
+            moveBtn.disabled = true;
+            deleteBtn.disabled = true;
+            zipBtn.disabled = true;
+        } else {
+            selectionInfo.textContent = `${count} item${count > 1 ? 's' : ''} selected`;
+            downloadBtn.disabled = false;
+            moveBtn.disabled = false;
+            deleteBtn.disabled = false;
+            zipBtn.disabled = count === 0;
+        }
+    }
+
+    // Toggle item selection
+    function toggleItemSelection(itemPath) {
+        if (selectedItems.has(itemPath)) {
+            selectedItems.delete(itemPath);
+        } else {
+            selectedItems.add(itemPath);
+        }
+        updateSelectionInfo();
+    }
+
+    // Clear all selections
+    function clearSelections() {
+        selectedItems.clear();
+        updateSelectionInfo();
+    }
+
+    // Navigate to a path
+    function navigateTo(path) {
+        currentPath = path;
+        clearSelections();
+        updatePathDisplay();
+        loadFiles(path);
+    }
+
+    // Update path display
+    function updatePathDisplay() {
+        filePath.innerHTML = '';
+        const segments = currentPath.split('/').filter(segment => segment !== '');
+        
+        // Add root segment
+        const rootSegment = document.createElement('span');
+        rootSegment.className = 'path-segment';
+        rootSegment.textContent = 'Root';
+        rootSegment.setAttribute('data-path', '');
+        rootSegment.addEventListener('click', () => navigateTo(''));
+        filePath.appendChild(rootSegment);
+        
+        // Add other segments
+        let currentSegmentPath = '';
+        segments.forEach(segment => {
+            const separator = document.createElement('span');
+            separator.className = 'path-separator';
+            separator.textContent = ' / ';
+            filePath.appendChild(separator);
+            
+            currentSegmentPath += '/' + segment;
+            
+            const pathSegment = document.createElement('span');
+            pathSegment.className = 'path-segment';
+            pathSegment.textContent = segment;
+            pathSegment.setAttribute('data-path', currentSegmentPath);
+            pathSegment.addEventListener('click', () => navigateTo(currentSegmentPath));
+            filePath.appendChild(pathSegment);
+        });
+    }
+
+    // Load files for current path using API
+    async function loadFiles(path) {
+        try {
+            const response = await fetch(`/api/project/${projectId}/files?path=${encodeURIComponent(path)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                fileGrid.innerHTML = '';
+                fileListItems.innerHTML = '';
+                
+                // Add ".." for parent directory if not at root
+                if (path !== '') {
+                    addFileItem('..', { type: 'folder' }, true, path);
+                }
+                
+                // Add files and folders
+                data.files.forEach(item => {
+                    addFileItem(item.name, item, false, path);
+                });
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error loading files:', error);
+            showToast('Failed to load files', 'error');
+        }
+    }
+
+    // Add a file item to both grid and list views
+    function addFileItem(name, item, isParent, path) {
+        const isFolder = item.type === 'folder';
+        const fileTypeClass = isFolder ? 'folder' : getFileTypeClass(name);
+        const fileIcon = isFolder ? 'fa-folder' : getFileIcon(name);
+        const fullPath = isParent ? 
+            path.split('/').slice(0, -1).join('/') || '' : 
+            (path === '' ? name : `${path}/${name}`);
+        
+        // Grid View Item
+        const gridItem = document.createElement('div');
+        gridItem.className = `file-item ${fileTypeClass}`;
+        gridItem.setAttribute('data-path', fullPath);
+        
+        const isSelected = selectedItems.has(fullPath);
+        if (isSelected) {
+            gridItem.classList.add('selected');
+        }
+        
+        gridItem.innerHTML = `
+            <div class="file-checkbox ${isSelected ? 'checked' : ''}"></div>
+            <i class="fas ${fileIcon} file-icon"></i>
+            <div class="file-name">${isParent ? '..' : name}</div>
+            <div class="file-info">${isParent ? 'Parent Directory' : (isFolder ? 'Folder' : `${item.size} • ${new Date(item.modified).toLocaleDateString()}`)}</div>
+            <div class="file-actions">
+            <button class="file-menu-btn">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            </div>
+        `;
+        
+        // Grid item event handlers
+        const checkbox = gridItem.querySelector('.file-checkbox');
+        checkbox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleItemSelection(fullPath);
+            checkbox.classList.toggle('checked');
+            gridItem.classList.toggle('selected');
+        });
+        
+        const menuBtn = gridItem.querySelector('.file-menu-btn');
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showContextMenu(e, fullPath, name, item);
+        });
+        
+        gridItem.addEventListener('click', (e) => {
+            if (e.target !== checkbox && e.target !== menuBtn && !checkbox.contains(e.target) && !menuBtn.contains(e.target)) {
+                if (isFolder) {
+                    navigateTo(fullPath);
+                } else {
+                    openFileInViewer(name, item, fullPath);
+                }
+            }
+        });
+        
+        fileGrid.appendChild(gridItem);
+        
+        // List View Item
+        const listItem = document.createElement('div');
+        listItem.className = `file-list-item ${isSelected ? 'selected' : ''}`;
+        listItem.setAttribute('data-path', fullPath);
+        
+        listItem.innerHTML = `
+            <div class="file-list-name">
+            <div class="file-list-checkbox ${isSelected ? 'checked' : ''}"></div>
+            <i class="fas ${fileIcon}"></i>
+            <span>${isParent ? '..' : name}</span>
+            </div>
+            <div class="file-type">${getFileType(name, isFolder)}</div>
+            <div class="file-size">${isParent ? '' : (isFolder ? '—' : item.size)}</div>
+            <div class="file-modified">${isParent ? '' : (isFolder ? '—' : new Date(item.modified).toLocaleDateString())}</div>
+            <div class="file-actions">
+            <button class="file-menu-btn">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            </div>
+        `;
+        
+        // List item event handlers
+        const listCheckbox = listItem.querySelector('.file-list-checkbox');
+        listCheckbox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleItemSelection(fullPath);
+            listCheckbox.classList.toggle('checked');
+            listItem.classList.toggle('selected');
+            gridItem.querySelector('.file-checkbox').classList.toggle('checked');
+            gridItem.classList.toggle('selected');
+        });
+        
+        const listMenuBtn = listItem.querySelector('.file-menu-btn');
+        listMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showContextMenu(e, fullPath, name, item);
+        });
+        
+        listItem.addEventListener('click', (e) => {
+            if (e.target !== listCheckbox && e.target !== listMenuBtn && !listCheckbox.contains(e.target) && !listMenuBtn.contains(e.target)) {
+                if (isFolder) {
+                    navigateTo(fullPath);
+                } else {
+                    openFileInViewer(name, item, fullPath);
+                }
+            }
+        });
+        
+        fileListItems.appendChild(listItem);
+    }
+
+    // Show context menu
+    function showContextMenu(event, path, name, item) {
+        contextMenuTarget = { path, name, item };
+        
+        fileContextMenu.style.left = `${event.pageX}px`;
+        fileContextMenu.style.top = `${event.pageY}px`;
+        fileContextMenu.classList.add('show');
+        
+        // Close menu when clicking elsewhere
+        const closeMenu = (e) => {
+            if (!fileContextMenu.contains(e.target)) {
+                fileContextMenu.classList.remove('show');
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        
+        setTimeout(() => {
+            document.addEventListener('click', closeMenu);
+        }, 10);
+    }
+
+    // Handle context menu actions
+    fileContextMenu.addEventListener('click', (e) => {
+        const action = e.target.getAttribute('data-action') || 
+                      e.target.parentElement.getAttribute('data-action');
+        
+        if (!action || !contextMenuTarget) return;
+        
+        const { path, name, item } = contextMenuTarget;
+        
+        switch (action) {
+            case 'open':
+                if (item.type === 'folder') {
+                    navigateTo(path);
+                } else {
+                    openFileInViewer(name, item, path);
+                }
+                break;
+            case 'rename':
+                showRenameModal(path, name, item);
+                break;
+            case 'move':
+                selectedItems.clear();
+                selectedItems.add(path);
+                updateSelectionInfo();
+                showMoveModal();
+                break;
+            case 'download':
+                downloadSelectedFile(path, name);
+                break;
+            case 'zip':
+                createZipFromSelection([path], name);
+                break;
+            case 'delete':
+                showDeleteModal(path, name, item);
+                break;
+        }
+        
+        fileContextMenu.classList.remove('show');
+    });
+
+    // Open file in editor
+    function openFileInViewer(filename, file, filePath) {
+        currentEditingFile = { filename, file, filePath };
+        
+        // Update viewer UI
+        fileViewerTitle.innerHTML = `<i class="fas fa-file"></i> ${filename}`;
+        
+        // Set iframe source with query parameters
+        fileViewerIframe.src = `/editor?projectId=${projectId}&path=${encodeURIComponent(filePath)}`;
+        
+        // Show viewer
+        fileViewer.style.display = 'flex';
+        overlay.classList.add('active');
+    }
+    
+    // Listen for messages from editor
+    window.addEventListener('message', function(event) {
+        const { type, message, success } = event.data;
+        switch(type) {
+            case 'editorReady':
+                console.log('Editor is ready');
+                break;
+            case 'fileSaved':
+                if (success) {
+                    showToast(message, 'success');
+                } else {
+                    showToast(message, 'error');
+                }
+                break;
+            case 'fileReloaded':
+                if (success) {
+                    showToast(message, 'success');
+                } else {
+                    showToast(message, 'error');
+                }
+                break;
+        }
+    });
+    
+    // Save file from parent
+    function saveFile() {
+        if (fileViewerIframe.contentWindow) {
+            fileViewerIframe.contentWindow.postMessage({
+                type: 'saveFile'
+            }, '*');
+        }
+    }
+    // Reload file from parent
+    function reloadFile() {
+        if (fileViewerIframe.contentWindow) {
+            fileViewerIframe.contentWindow.postMessage({
+                type: 'reloadFile'
+            }, '*');
+        }
+    }
+    // Close file viewer
+    function closeFileViewer() {
+        fileViewer.style.display = 'none';
+        overlay.classList.remove('active');
+        currentEditingFile = null;
+    }
+
+    // Modal Handlers
+    async function handleNewFileSubmit(e) {
+        e.preventDefault();
+        const fileName = document.getElementById('fileNameInput').value.trim();
+        
+        if (!fileName) {
+            showToast('Please enter a file name', 'error');
+            return;
+        }
+        
+        // Validate file name
+        if (!fileName.match(/^[a-zA-Z0-9_\-\.]+$/)) {
+            showToast('Invalid file name. Use only letters, numbers, underscores, hyphens, and dots.', 'error');
+            return;
+        }
+        
+        const filePath = currentPath === '' ? fileName : `${currentPath}/${fileName}`;
+        
+        try {
+            const response = await fetch(`/api/project/${projectId}/file`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    path: filePath,
+                    content: ''
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(`File "${fileName}" created successfully!`, 'success');
+                closeModal(newFileModal);
+                loadFiles(currentPath);
+                
+                // Open the new file in viewer
+                const newFile = {
+                    type: 'file',
+                    content: '',
+                    size: '0 B',
+                    modified: new Date().toISOString()
+                };
+                openFileInViewer(fileName, newFile, filePath);
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error creating file:', error);
+            showToast('Failed to create file', 'error');
+        }
+    }
+
+    async function handleNewFolderSubmit(e) {
+        e.preventDefault();
+        const folderName = document.getElementById('folderNameInput').value.trim();
+        
+        if (!folderName) {
+            showToast('Please enter a folder name', 'error');
+            return;
+        }
+        
+        // Validate folder name
+        if (!folderName.match(/^[a-zA-Z0-9_\-]+$/)) {
+            showToast('Invalid folder name. Use only letters, numbers, underscores, and hyphens.', 'error');
+            return;
+        }
+        
+        const folderPath = currentPath === '' ? folderName : `${currentPath}/${folderName}`;
+        
+        try {
+            const response = await fetch(`/api/project/${projectId}/folder`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    path: folderPath
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(`Folder "${folderName}" created successfully!`, 'success');
+                closeModal(newFolderModal);
+                loadFiles(currentPath);
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error creating folder:', error);
+            showToast('Failed to create folder', 'error');
+        }
+    }
+
+    function showRenameModal(path, oldName, item) {
+        const isFolder = item.type === 'folder';
+        document.getElementById('renameInput').value = oldName;
+        document.getElementById('renameHint').textContent = isFolder ? 
+            'Use only letters, numbers, underscores, and hyphens' : 
+            'Use only letters, numbers, underscores, hyphens, and dots';
+        
+        currentRenameAction = { path, oldName, isFolder };
+        openModal(renameModal);
+    }
+
+    async function handleRenameSubmit(e) {
+        e.preventDefault();
+        const newName = document.getElementById('renameInput').value.trim();
+        
+        if (!newName || !currentRenameAction) {
+            showToast('Please enter a new name', 'error');
+            return;
+        }
+        
+        const { path, oldName, isFolder } = currentRenameAction;
+        
+        if (newName === oldName) {
+            closeModal(renameModal);
+            return;
+        }
+        
+        // Validate new name
+        const pattern = isFolder ? /^[a-zA-Z0-9_\-]+$/ : /^[a-zA-Z0-9_\-\.]+$/;
+        if (!newName.match(pattern)) {
+            showToast(`Invalid ${isFolder ? 'folder' : 'file'} name. Use only letters, numbers, underscores, hyphens${isFolder ? '' : ', and dots'}.`, 'error');
+            return;
+        }
+        
+        const pathSegments = path.split('/');
+        pathSegments[pathSegments.length - 1] = newName;
+        const newPath = pathSegments.join('/');
+        
+        try {
+            const response = await fetch(`/api/project/${projectId}/rename`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    oldPath: path,
+                    newPath: newPath
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(`"${oldName}" renamed to "${newName}" successfully!`, 'success');
+                closeModal(renameModal);
+                loadFiles(currentPath);
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error renaming:', error);
+            showToast('Failed to rename', 'error');
+        }
+    }
+
+    function showDeleteModal(path, name, item) {
+        const isFolder = item.type === 'folder';
+        const message = `Are you sure you want to delete "${name}"${isFolder ? ' and all its contents' : ''}?`;
+        document.getElementById('deleteMessage').textContent = message;
+        
+        currentDeleteAction = { path, name };
+        openModal(confirmDeleteModal);
+    }
+
+    async function handleConfirmDelete() {
+    if (!currentDeleteAction) return;
+    
+    // Handle file/folder deletion
+    if (currentDeleteAction.path) {
+        const { path, name } = currentDeleteAction;
+        
+        try {
+            const response = await fetch(`/api/project/${projectId}/file`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(`"${name}" deleted successfully!`, 'success');
+                closeModal(confirmDeleteModal);
+                loadFiles(currentPath);
+                clearSelections();
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting:', error);
+            showToast('Failed to delete', 'error');
+        }
+    }
+    // Handle environment variable deletion
+    else if (currentDeleteAction.type === 'env' && currentDeleteAction.index !== undefined) {
+        const index = currentDeleteAction.index;
+        const envName = environmentVariables[index].name || 'Unnamed variable';
+        
+        environmentVariables.splice(index, 1);
+        
+        try {
+            // Update the environment variables in project config
+            const envVars = {};
+            environmentVariables.forEach(env => {
+                if (env.name && env.value) {
+                    envVars[env.name] = env.value;
+                }
+            });
+            
+            const response = await fetch(`/api/project/${projectId}/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...projectConfig, env: envVars })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showToast(`Environment variable "${envName}" deleted successfully!`, 'success');
+                closeModal(confirmDeleteModal);
+                loadEnvironmentVariables();
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            showToast(`Failed to delete environment variable: ${error.message}`, 'error');
+        }
+    }
+    // Handle multiple file deletion
+    else if (currentDeleteAction.multiple) {
+        const { paths } = currentDeleteAction;
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const path of paths) {
+            try {
+                const response = await fetch(`/api/project/${projectId}/file`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                }
+            } catch (error) {
+                errorCount++;
+            }
+        }
+        
+        if (errorCount === 0) {
+            showToast(`Successfully deleted ${successCount} items!`, 'success');
+        } else {
+            showToast(`Deleted ${successCount} items, ${errorCount} failed`, 'warning');
+        }
+        
+        closeModal(confirmDeleteModal);
+        loadFiles(currentPath);
+        clearSelections();
+    }
+    // Handle project deletion
+    else if (currentDeleteAction.deleteProject) {
+        try {
+            const response = await fetch(`/delete-project/${projectId}`, {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                showToast('Project deleted successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } else {
+                throw new Error('Failed to delete project');
+            }
+        } catch (error) {
+            showToast('Failed to delete project', 'error');
+        }
+    }
+    // Handle startup config reset
+    else if (currentDeleteAction.resetStartup) {
+        document.getElementById('mainFile').value = '';
+        document.getElementById('installPackages').value = '';
+        document.getElementById('uninstallPackages').value = '';
+        showToast('Startup configuration reset!', 'success');
+        closeModal(confirmDeleteModal);
+    }
+}
+
+    // Download file function
+    async function downloadSelectedFile(filePath, fileName) {
+        try {
+            const response = await fetch(`/api/project/${projectId}/file?path=${encodeURIComponent(filePath)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const blob = new Blob([data.content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showToast(`File "${fileName}" downloaded successfully!`, 'success');
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            showToast('Failed to download file', 'error');
+        }
+    }
+
+    // Create ZIP from selected files
+    async function createZipFromSelection(filePaths, zipFileName = null) {
+        try {
+            const response = await fetch(`/api/project/${projectId}/zip`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    files: filePaths,
+                    zipFileName: zipFileName
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                
+                // If download URL is provided, initiate download
+                if (data.data && data.data.downloadUrl) {
+                    window.location.href = data.data.downloadUrl;
+                }
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error creating ZIP:', error);
+            showToast('Failed to create ZIP archive', 'error');
+        }
+    }
+
+    // File management button event listeners
+    downloadBtn.addEventListener('click', () => {
+        if (selectedItems.size === 1) {
+            const itemPath = Array.from(selectedItems)[0];
+            const pathSegments = itemPath.split('/').filter(segment => segment !== '');
+            const fileName = pathSegments[pathSegments.length - 1];
+            downloadSelectedFile(itemPath, fileName);
+        } else if (selectedItems.size > 1) {
+            showToast(`Please select only one file to download`, 'warning');
+        } else {
+            showToast(`Please select a file to download`, 'warning');
+        }
+    });
+
+    moveBtn.addEventListener('click', showMoveModal);
+
+    zipBtn.addEventListener('click', () => {
+        if (selectedItems.size > 0) {
+            const itemPaths = Array.from(selectedItems);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const zipFileName = `archive-${timestamp}.zip`;
+            createZipFromSelection(itemPaths, zipFileName);
+        } else {
+            showToast('Please select files/folders to zip', 'warning');
+        }
+    });
+
+    deleteBtn.addEventListener('click', () => {
+        if (selectedItems.size === 1) {
+            const itemPath = Array.from(selectedItems)[0];
+            const pathSegments = itemPath.split('/').filter(segment => segment !== '');
+            const fileName = pathSegments[pathSegments.length - 1];
+            const item = contextMenuTarget?.item;
+            showDeleteModal(itemPath, fileName, item || { type: 'file' });
+        } else if (selectedItems.size > 1) {
+            const message = `Are you sure you want to delete ${selectedItems.size} items?`;
+            document.getElementById('deleteMessage').textContent = message;
+            currentDeleteAction = { multiple: true, paths: Array.from(selectedItems) };
+            openModal(confirmDeleteModal);
+        } else {
+            showToast(`Please select items to delete`, 'warning');
+        }
+    });
+
+    refreshBtn.addEventListener('click', () => {
+        loadFiles(currentPath);
+    });
+
+    // Theme toggle functionality
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.body.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', newTheme);
+        
+        // Update theme toggle icon
+        const themeIcon = themeToggle.querySelector('i');
+        themeIcon.className = newTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        
+        // Save theme preference
+        localStorage.setItem('theme', newTheme);
+    });
+
+    // Environment Variables Functionality
+    const envList = document.getElementById('envList');
+    const addEnvVarBtn = document.getElementById('addEnvVar');
+    const saveEnvVarsBtn = document.getElementById('saveEnvVars');
+    
+    let environmentVariables = projectConfig.env ? Object.entries(projectConfig.env).map(([name, value]) => ({
+        name,
+        value,
+        isSecret: value.includes('*') || name.toLowerCase().includes('secret') || name.toLowerCase().includes('key')
+    })) : [];
+    
+    function loadEnvironmentVariables() {
+        envList.innerHTML = '';
+        
+        if (environmentVariables.length === 0) {
+            envList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-user-secret"></i>
+                    <h3>No Environment Variables</h3>
+                    <p>Add your secret environment variables here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        environmentVariables.forEach((env, index) => {
+            const envItem = document.createElement('div');
+            envItem.className = 'env-item';
+            envItem.setAttribute('data-index', index);
+            
+            envItem.innerHTML = `
+                <div class="env-inputs">
+                    <input type="text" class="form-input env-name" value="${env.name}" placeholder="Variable Name" data-index="${index}">
+                    <input type="${env.isSecret ? 'password' : 'text'}" class="form-input env-value" value="${env.value}" placeholder="Variable Value" data-index="${index}">
+                </div>
+                <div class="env-actions">
+                    <button class="file-action-btn toggle-secret" data-index="${index}" title="${env.isSecret ? 'Show Value' : 'Hide Value'}">
+                        <i class="fas ${env.isSecret ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                    </button>
+                    <button class="file-action-btn save-env" data-index="${index}" title="Save Variable">
+                        <i class="fas fa-save"></i>
+                    </button>
+                    <button class="file-action-btn delete-env" data-index="${index}" title="Delete Variable">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="env-status" id="envStatus-${index}"></div>
+            `;
+            
+            envList.appendChild(envItem);
+        });
+        
+        updateSaveButtonState();
+    }
+    
+    // Add new environment variable
+    addEnvVarBtn.addEventListener('click', () => {
+        environmentVariables.push({ name: '', value: '', isSecret: false });
+        loadEnvironmentVariables();
+        updateSaveButtonState();
+    });
+    
+    // Save all environment variables
+    saveEnvVarsBtn.addEventListener('click', saveEnvironmentVariables);
+    
+    // Handle environment variable actions
+    envList.addEventListener('click', (e) => {
+        // Toggle secret visibility
+        if (e.target.classList.contains('toggle-secret') || e.target.parentElement.classList.contains('toggle-secret')) {
+            const btn = e.target.classList.contains('toggle-secret') ? e.target : e.target.parentElement;
+            const index = parseInt(btn.getAttribute('data-index'));
+            environmentVariables[index].isSecret = !environmentVariables[index].isSecret;
+            loadEnvironmentVariables();
+            updateSaveButtonState();
+        }
+        
+        // Save individual variable
+        if (e.target.classList.contains('save-env') || e.target.parentElement.classList.contains('save-env')) {
+            const btn = e.target.classList.contains('save-env') ? e.target : e.target.parentElement;
+            const index = parseInt(btn.getAttribute('data-index'));
+            saveSingleEnvironmentVariable(index);
+        }
+        
+        // Delete environment variable
+        if (e.target.classList.contains('delete-env') || e.target.parentElement.classList.contains('delete-env')) {
+            const btn = e.target.classList.contains('delete-env') ? e.target : e.target.parentElement;
+            const index = parseInt(btn.getAttribute('data-index'));
+            const envName = environmentVariables[index].name || 'Unnamed variable';
+            const message = `Are you sure you want to delete the environment variable "${envName}"?`;
+            document.getElementById('deleteMessage').textContent = message;
+            currentDeleteAction = { type: 'env', index: index };
+            openModal(confirmDeleteModal);
+        }
+    });
+    
+    // Handle input changes to update local state
+    envList.addEventListener('input', (e) => {
+        if (e.target.classList.contains('env-name') || e.target.classList.contains('env-value')) {
+            const index = parseInt(e.target.getAttribute('data-index'));
+            if (e.target.classList.contains('env-name')) {
+                environmentVariables[index].name = e.target.value;
+            } else {
+                environmentVariables[index].value = e.target.value;
+            }
+            updateSaveButtonState();
+            showUnsavedChangesIndicator(index);
+        }
+    });
+    
+    // Show unsaved changes indicator
+    function showUnsavedChangesIndicator(index) {
+        const statusElement = document.getElementById(`envStatus-${index}`);
+        if (statusElement) {
+            statusElement.innerHTML = '<i class="fas fa-circle unsaved-dot"></i> Unsaved changes';
+            statusElement.className = 'env-status unsaved';
+        }
+    }
+    
+    // Clear unsaved changes indicator
+    function clearUnsavedChangesIndicator(index) {
+        const statusElement = document.getElementById(`envStatus-${index}`);
+        if (statusElement) {
+            statusElement.innerHTML = '<i class="fas fa-check saved-icon"></i> Saved';
+            statusElement.className = 'env-status saved';
+            setTimeout(() => {
+                statusElement.innerHTML = '';
+                statusElement.className = 'env-status';
+            }, 2000);
+        }
+    }
+    
+    // Update save button state
+    function updateSaveButtonState() {
+        const hasVariables = environmentVariables.length > 0;
+        const hasValidVariables = environmentVariables.some(env => env.name.trim() && env.value.trim());
+        
+        saveEnvVarsBtn.disabled = !hasValidVariables;
+        
+        if (!hasVariables) {
+            saveEnvVarsBtn.innerHTML = '<i class="fas fa-save"></i> No Variables to Save';
+        } else if (!hasValidVariables) {
+            saveEnvVarsBtn.innerHTML = '<i class="fas fa-save"></i> Add Variable Names & Values';
+        } else {
+            const validCount = environmentVariables.filter(env => env.name.trim() && env.value.trim()).length;
+            saveEnvVarsBtn.innerHTML = `<i class="fas fa-save"></i> Save ${validCount} Variables`;
+        }
+    }
+    
+    // Save single environment variable
+    async function saveSingleEnvironmentVariable(index) {
+        const env = environmentVariables[index];
+        
+        if (!env.name.trim() || !env.value.trim()) {
+            showToast('Please enter both variable name and value', 'warning');
+            return;
+        }
+        
+        try {
+            const envVars = {};
+            envVars[env.name] = env.value;
+            
+            const response = await fetch(`/api/project/${projectId}/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    ...projectConfig, 
+                    env: { ...projectConfig.env, ...envVars } 
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showToast(`Variable "${env.name}" saved successfully!`, 'success');
+                clearUnsavedChangesIndicator(index);
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            showToast(`Failed to save variable: ${error.message}`, 'error');
+        }
+    }
+    
+    // Save all environment variables
+    async function saveEnvironmentVariables() {
+        const envVars = {};
+        let validCount = 0;
+        
+        environmentVariables.forEach(env => {
+            if (env.name.trim() && env.value.trim()) {
+                envVars[env.name] = env.value;
+                validCount++;
+            }
+        });
+        
+        if (validCount === 0) {
+            showToast('No valid environment variables to save', 'warning');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/project/${projectId}/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...projectConfig, env: envVars })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showToast(`${validCount} environment variable(s) saved successfully!`, 'success');
+                
+                // Clear all unsaved indicators
+                environmentVariables.forEach((_, index) => {
+                    clearUnsavedChangesIndicator(index);
+                });
+                
+                // Reload to get updated config
+                setTimeout(() => {
+                    loadEnvironmentVariables();
+                }, 1000);
+                
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            showToast(`Failed to save environment variables: ${error.message}`, 'error');
+        }
+    }
+    
+    
+    // Startup Configuration Functionality
+    const saveStartupBtn = document.getElementById('saveStartup');
+    const resetStartupBtn = document.getElementById('resetStartup');
+    const installBtn = document.getElementById('installBtn');
+    const uninstallBtn = document.getElementById('uninstallBtn');
+    const installDependencyBtn = document.getElementById('installDependencyBtn');
+    const installDependencyGroup = document.getElementById('installDependencyGroup');
+    const dependencyBtnText = document.getElementById('dependencyBtnText');
+    const dependencyHint = document.getElementById('dependencyHint');
+    
+    // Check for dependency files based on project language
+    async function checkDependencyFiles() {
+        try {
+            const response = await fetch(`/api/project/${projectId}/files`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const files = data.files;
+                let dependencyFile = null;
+                
+                // Check based on project language
+                if (projectLanguage === 'nodejs' || projectLanguage === 'javascript') {
+                    dependencyFile = files.find(file => file.name === 'package.json');
+                    if (dependencyFile) {
+                        dependencyBtnText.textContent = 'Install Dependencies (package.json)';
+                        dependencyHint.textContent = 'Install all dependencies from package.json file';
+                        installDependencyGroup.style.display = 'block';
+                    }
+                } else if (projectLanguage === 'python') {
+                    dependencyFile = files.find(file => file.name === 'requirements.txt');
+                    if (dependencyFile) {
+                        dependencyBtnText.textContent = 'Install Dependencies (requirements.txt)';
+                        dependencyHint.textContent = 'Install all dependencies from requirements.txt file';
+                        installDependencyGroup.style.display = 'block';
+                    }
+                }
+                // Hide if no relevant dependency file found
+                if (!dependencyFile) {
+                    installDependencyGroup.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Error checking dependency files:', error);
+            installDependencyGroup.style.display = 'none';
+        }
+    }
+    
+    // Install dependencies from package.json or requirements.txt
+    async function installDependencies() {
+        try {
+            showToast('Installing dependencies...', 'info');
+            
+            const response = await fetch(`/api/project/${projectId}/installDependencies`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to install dependencies', 'error');
+        }
+    }
+    
+    // Event listener for install dependency button
+    installDependencyBtn.addEventListener('click', installDependencies);
+    
+
+    // Load startup configuration from project config
+    function loadStartupConfig() {
+        document.getElementById('mainFile').value = projectConfig.mainFile || '';
+        document.getElementById('installPackages').value = projectConfig.installPackages || '';
+        document.getElementById('uninstallPackages').value = projectConfig.uninstallPackages || '';
+        checkDependencyFiles();
+    }
+    
+    saveStartupBtn.addEventListener('click', async () => {
+        const config = {
+            mainFile: document.getElementById('mainFile').value,
+            installPackages: document.getElementById('installPackages').value,
+            uninstallPackages: document.getElementById('uninstallPackages').value
+        };
+        
+        try {
+            const response = await fetch(`/api/project/${projectId}/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...projectConfig, ...config })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showToast('Startup configuration saved successfully!', 'success');
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to save startup configuration', 'error');
+        }
+    });
+    
+    resetStartupBtn.addEventListener('click', () => {
+        const message = 'Are you sure you want to reset the startup configuration?';
+        document.getElementById('deleteMessage').textContent = message;
+        currentDeleteAction = { resetStartup: true };
+        openModal(confirmDeleteModal);
+    });
+
+    installBtn.addEventListener('click', async () => {
+        const packages = document.getElementById('installPackages').value.trim();
+        if (!packages) {
+            showToast('Please enter package names to install', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/project/${projectId}/install`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ packages })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showToast('Packages installed successfully!', 'success');
+                
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to install packages', 'error');
+        }
+    });
+
+    uninstallBtn.addEventListener('click', async () => {
+        const packages = document.getElementById('uninstallPackages').value.trim();
+        if (!packages) {
+            showToast('Please enter package names to uninstall', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/project/${projectId}/uninstall`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ packages })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showToast('Packages uninstalled successfully!', 'success');
+                
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to uninstall packages', 'error');
+        }
+    });
+
+    // Settings Functionality
+    const saveProjectNameBtn = document.getElementById('saveProjectName');
+    const projectNameInput = document.getElementById('projectNameInput');
+    const projectNameEl = document.getElementById('projectName');
+    const copyShareLinkBtn = document.getElementById('copyShareLink');
+    const shareLinkInput = document.getElementById('shareLink');
+    const deleteProjectBtn = document.getElementById('deleteProject');
+    
+    saveProjectNameBtn.addEventListener('click', async() => {
+        const newName = projectNameInput.value.trim();
+        if (newName) {
+            try {
+            const response = await fetch(`/api/project/rename/${projectId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    newName: newName
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                window.location.href=window.location;
+                
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error renaming:', error);
+            showToast('Failed to rename', 'error');
+        }
+        } else {
+            showToast('Please enter a valid project name.', 'warning');
+        }
+    });
+    
+    copyShareLinkBtn.addEventListener('click', () => {
+        shareLinkInput.select();
+        document.execCommand('copy');
+        showToast('Share link copied to clipboard!', 'success');
+    });
+    
+    deleteProjectBtn.addEventListener('click', () => {
+        const message = 'Are you sure you want to delete this project? This action cannot be undone.';
+        document.getElementById('deleteMessage').textContent = message;
+        currentDeleteAction = { deleteProject: true };
+        openModal(confirmDeleteModal);
+    });
+
+    // Console Functionality with real API integration
+    let serverStatus = '<%= project.status %>';
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const statusEl = document.getElementById('serverStatus');
+    updateStatus(serverStatus);
+    
+    function updateStatus(status) {
+        serverStatus = status;
+        statusEl.textContent = `Status: ${status.charAt(0).toUpperCase() + status.slice(1)}`;
+        
+        // Real-time button state updates
+        switch(status) {
+            case 'stopped':
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                restartBtn.disabled = true;
+                statusEl.style.color = 'var(--danger-color)';
+                break;
+            case 'running':
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                restartBtn.disabled = false;
+                statusEl.style.color = 'var(--success-color)';
+                break;
+            
+            case 'starting':
+            case 'stopping':
+            case 'restarting':
+                startBtn.disabled = true;
+                stopBtn.disabled = true;
+                restartBtn.disabled = true;
+                statusEl.style.color = 'var(--warning-color)';
+                break;
+            default:
+                startBtn.disabled = true;
+                stopBtn.disabled = true;
+                restartBtn.disabled = true;
+                statusEl.style.color = 'var(--text-muted)';
+        }
+    }
+
+    async function startServer() {
+        try {
+            const response = await fetch(`/api/project/${projectId}/start`, { method: 'POST' });
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                // Status will update automatically via socket broadcast
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to start server', 'error');
+        }
+    }
+
+    async function stopServer() {
+        try {
+            const response = await fetch(`/api/project/${projectId}/stop`, { method: 'POST' });
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                // Status will update automatically via socket broadcast
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to stop server', 'error');
+        }
+    }
+
+    async function restartServer() {
+        try {
+            const response = await fetch(`/api/project/${projectId}/restart`, { method: 'POST' });
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                // Status will update automatically via socket broadcast
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to restart server', 'error');
+        }
+    }
+
+    startBtn.addEventListener('click', startServer);
+    stopBtn.addEventListener('click', stopServer);
+    restartBtn.addEventListener('click', restartServer);
+    
+    // View toggle
+    gridViewBtn.addEventListener('click', () => {
+        if (currentView !== 'grid') {
+            currentView = 'grid';
+            gridViewBtn.classList.add('active');
+            listViewBtn.classList.remove('active');
+            fileGrid.style.display = 'grid';
+            fileListView.style.display = 'none';
+        }
+    });
+
+    listViewBtn.addEventListener('click', () => {
+        if (currentView !== 'list') {
+            currentView = 'list';
+            listViewBtn.classList.add('active');
+            gridViewBtn.classList.remove('active');
+            fileGrid.style.display = 'none';
+            fileListView.style.display = 'flex';
+        }
+    });
+
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast');
+        existingToasts.forEach(toast => toast.remove());
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation' : 'info'}"></i>
+            <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Show toast
+        setTimeout(() => toast.classList.add('show'), 100);
+        
+        // Hide toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    function refreshIframe() {
+      const iframe = document.getElementById('terminalIframe');
+      iframe.src = iframe.src;
+    }
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+        loadThemePreference();
+        initTopIndicator();
+        initModals();
+        updatePathDisplay();
+        loadFiles(currentPath);
+        loadEnvironmentVariables();
+        loadStartupConfig();
+        
+        // Set initial status
+        updateStatus(serverStatus);
+        
+        // Set initial view
+        fileGrid.style.display = 'grid';
+        fileListView.style.display = 'none';
+        
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get('toast');
+    const type = params.get('type') || 'info';
+
+    if (message) {
+      showToast(message, type);
+
+      // 1 sec baad URL params hata do 😎
+      setTimeout(() => {
+        const url = window.location.origin + window.location.pathname;
+        history.replaceState({}, document.title, url);
+      }, 1000);
+    }
+    });
+</script>
+
+</body>
+</html>

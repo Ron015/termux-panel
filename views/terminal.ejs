@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+    <title><%= title %></title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            color: #0f0;
+            font-family: "Fira Code", monospace;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            color: #0f0;
+            font-weight: bold;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            background: #444;
+        }
+
+        .btn.primary {
+            background: #0a0;
+        }
+
+        .btn.danger {
+            background: #a00;
+        }
+
+        .terminal {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 1rem;
+            line-height: 1.4;
+            background: #000;
+            color: #ccc;
+            transition: font-size 0.1s ease;
+        }
+
+        .input-line {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #333;
+            padding: 8px;
+            background: #000;
+        }
+
+        .prompt {
+            color: #0f0;
+            margin-right: 6px;
+        }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        .log-line {
+            margin: 2px 0;
+            word-wrap: break-word;
+        }
+
+        .log-command {
+            color: #0f0;
+        }
+
+        .log-error {
+            color: #f33;
+        }
+
+        .log-info {
+            color: #0af;
+        }
+
+        .log-warning {
+            color: #ff0;
+        }
+
+        .log-success {
+            color: #0f0;
+        }
+
+        .connection-status {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+
+        .connected {
+            background: #0a0;
+            color: #000;
+        }
+
+        .disconnected {
+            background: #a00;
+            color: #fff;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background-color: #333; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <i class="fas fa-terminal"></i> <%= project.name %> - Terminal
+            <span id="connectionStatus" class="connection-status disconnected">Disconnected</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn" onclick="clearTerminal()">
+                <i class="fas fa-broom"></i> Clear
+            </button>
+        </div>
+    </div>
+
+    <div class="terminal" id="terminal">
+        <div class="log-line log-info">
+            Type <b>help</b> for available commands<br>
+           <br>
+        </div>
+    </div>
+
+    <div class="input-line">
+        <span class="prompt">$</span>
+        <input type="text" id="commandInput" autofocus autocomplete="off" placeholder="Enter command...">
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script>
+        const terminal = document.getElementById("terminal");
+        const input = document.getElementById("commandInput");
+        const projectStatus = document.getElementById("projectStatus");
+        const connectionStatus = document.getElementById("connectionStatus");
+        const projectId = '<%= project.id %>';
+        const projectName = '<%= project.name %>';
+        
+        let fontSize = 16;
+        let lastDist = 0;
+        let doubleTapTime = 0;
+
+        // Socket.IO connection with better configuration
+        const socket = io({
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            timeout: 20000
+        });
+
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            if (connected) {
+                connectionStatus.textContent = 'Connected';
+                connectionStatus.className = 'connection-status connected';
+            } else {
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.className = 'connection-status disconnected';
+            }
+        }
+
+        // Socket event listeners
+        socket.on('connect', () => {
+            updateConnectionStatus(true);
+            
+            // Join project room
+            socket.emit('join-project', projectId);
+        });
+
+        socket.on('disconnect', (reason) => {
+            updateConnectionStatus(false);
+        });
+
+        socket.on('reconnect', (attemptNumber) => {
+            updateConnectionStatus(true);
+            socket.emit('join-project', projectId);
+        });
+
+        socket.on('console-log', (message) => {
+            addLog(message, getLogType(message));
+        });
+
+        socket.on('connect_error', (error) => {
+            addLog(`[ERROR] Terminal failed: ${error.message}`, 'error');
+            updateConnectionStatus(false);
+        });
+
+        // Log function with colors
+        function addLog(msg, type = 'log') {
+            const div = document.createElement("div");
+            div.className = `log-line log-${type}`;
+            div.textContent = msg;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function getLogType(message) {
+            const lowerMsg = message.toLowerCase();
+            if (lowerMsg.includes('[error]') || lowerMsg.includes('error') || lowerMsg.includes('failed')) {
+                return 'error';
+            } else if (lowerMsg.includes('[warn]') || lowerMsg.includes('warning')) {
+                return 'warning';
+            } else if (lowerMsg.includes('[info]') || lowerMsg.includes('info')) {
+                return 'info';
+            } else if (lowerMsg.includes('success') || lowerMsg.includes('started') || lowerMsg.includes('connected')) {
+                return 'success';
+            } else if (message.startsWith('>') || message.startsWith('$')) {
+                return 'command';
+            }
+            return 'log';
+        }
+
+        // Project control functions
+        async function startProject() {
+            try {
+                addLog('[INFO] Starting project...', 'info');
+                const response = await fetch(`/api/project/${projectId}/start`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('[SUCCESS] Start command sent successfully', 'success');
+                } else {
+                    addLog(`[ERROR] Failed to start project: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`[ERROR] Failed to start project: ${error.message}`, 'error');
+            }
+        }
+
+        async function stopProject() {
+            try {
+                addLog('[INFO] Stopping project...', 'info');
+                const response = await fetch(`/api/project/${projectId}/stop`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('[SUCCESS] Stop command sent successfully', 'success');
+                } else {
+                    addLog(`[ERROR] Failed to stop project: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`[ERROR] Failed to stop project: ${error.message}`, 'error');
+            }
+        }
+
+        
+
+        async function clearTerminal() {
+    try {
+        addLog('[INFO] Clearing logs...', 'info');
+        const response = await fetch(`/clear-logs/${projectId}`, { method: 'POST' });
+        const data = await response.json();
+        console.log(data);
+
+        if (data.success) {
+            addLog('[SUCCESS] ' + data.message, 'success');
+            showToast(data.message, 'success');
+        } else {
+            addLog('[ERROR] ' + data.error, 'error');
+            showToast(data.error, 'error');
+        }
+
+        // Local terminal also clear after success
+        terminal.innerHTML = '';
+        addLog('[INFO] Terminal cleared locally', 'info');
+    } catch (error) {
+        addLog(`[ERROR] Failed to clear logs: ${error.message}`, 'error');
+        showToast(error.message, 'error');
+    }
+}
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast');
+        existingToasts.forEach(toast => toast.remove());
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation' : 'info'}"></i>
+            <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Show toast
+        setTimeout(() => toast.classList.add('show'), 100);
+        
+        // Hide toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+
+        // Built-in commands
+        const commands = {
+            help: () => {
+                addLog("Available commands:");
+                addLog("  help        - Show this help");
+                addLog("  clear       - Clear terminal");
+                addLog("  status      - Show project status");
+                addLog("  start       - Start the project");
+                addLog("  stop        - Stop the project");
+                addLog("  restart     - Restart the project");
+                addLog("  logs        - Show recent logs");
+                addLog("  ansi        - Show ANSI color test");
+            },
+
+            clear: () => clearTerminal(),
+
+            status: () => {
+                addLog(`Project: ${projectName}`);
+                addLog(`Status: ${projectStatus.textContent}`);
+                addLog(`ID: ${projectId}`);
+                addLog(`Socket: ${socket.connected ? 'Connected' : 'Disconnected'}`);
+            },
+
+            start: () => startProject(),
+
+            stop: () => stopProject(),
+
+            restart: async () => {
+                await stopProject();
+                setTimeout(() => startProject(), 2000);
+            },
+
+            logs: async () => {
+                try {
+                    const response = await fetch(`/api/project/${projectId}/logs`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const lines = data.logs.split('\n');
+                        lines.forEach(line => {
+                            if (line.trim()) {
+                                addLog(line, getLogType(line));
+                            }
+                        });
+                    }
+                } catch (error) {
+                    addLog(`[ERROR] Failed to load logs: ${error.message}`, 'error');
+                }
+            },
+
+            ansi: () => {
+                const colors = [
+                    { name: "Black", code: 0 },
+                    { name: "Red", code: 1 },
+                    { name: "Green", code: 2 },
+                    { name: "Yellow", code: 3 },
+                    { name: "Blue", code: 4 },
+                    { name: "Magenta", code: 5 },
+                    { name: "Cyan", code: 6 },
+                    { name: "White", code: 7 }
+                ];
+                
+                addLog('=== ANSI Colors ===', 'info');
+                colors.forEach(color => {
+                    addLog(`${color.name.padEnd(8)} ██████████`, 'log');
+                });
+            }
+        };
+
+        // Input handler
+        input.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+                const cmd = input.value.trim();
+                if (!cmd) return;
+                
+                addLog(`$ ${cmd}`, 'command');
+                
+                if (commands[cmd]) {
+                    commands[cmd]();
+                } else {
+                    addLog(`Unknown command: ${cmd}`, 'error');
+                }
+                
+                input.value = "";
+            }
+        });
+
+        // Pinch to zoom
+        terminal.addEventListener("touchstart", e => {
+            if (e.touches.length === 2) {
+                const [a, b] = e.touches;
+                lastDist = Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);
+            } else if (e.touches.length === 1) {
+                const now = Date.now();
+                if (now - doubleTapTime < 300) {
+                    fontSize = 16;
+                    terminal.style.fontSize = `${fontSize}px`;
+                    input.style.fontSize = `${fontSize}px`;
+                }
+                doubleTapTime = now;
+            }
+        });
+
+        terminal.addEventListener("touchmove", e => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const [a, b] = e.touches;
+                const dist = Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);
+                const delta = dist - lastDist;
+                if (Math.abs(delta) > 2) {
+                    fontSize += delta * 0.05;
+                    fontSize = Math.max(8, Math.min(48, fontSize));
+                    terminal.style.fontSize = `${fontSize}px`;
+                    input.style.fontSize = `${fontSize}px`;
+                    lastDist = dist;
+                }
+            }
+        }, { passive: false });
+
+        // Load initial logs
+        commands.logs();
+
+        // Focus input on click anywhere
+        document.addEventListener('click', () => {
+            input.focus();
+        });
+
+        // Auto-focus input on load
+        input.focus();
+
+    </script>
+</body>
+</html>

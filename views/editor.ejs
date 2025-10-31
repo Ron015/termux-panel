@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= fileName || 'Ron Editor' %></title>
+  <script src="ace.js"></script>
+  <script src="ext-language_tools.js"></script>
+  <script src="ext-modelist.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background: #1e1e1e;
+      font-family: monospace;
+    }
+
+    #editor {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      font-size: <%= fontSize || '16' %>px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="editor"><%= initialContent || '// Loading file...' %></div>
+
+  <!-- Ace Editor from CDN -->
+
+  <script>
+    // Configuration from EJS
+    const config = {
+      projectId: '<%= projectId %>',
+      filePath: '<%= filePath %>',
+      fileName: '<%= fileName %>',
+      theme: '<%= theme || 'ace/theme/monokai' %>',
+      mode: '<%= mode || '' %>',
+      fontSize: '<%= fontSize || '16' %>px',
+      autocomplete: <%= autocomplete || true %>,
+      snippets: <%= snippets || true %>,
+      wordWrap: <%= wordWrap || true %>,
+      showMargin: <%= showMargin || false %>,
+      lineNumbers: <%= lineNumbers || true %>,
+      gutter: <%= gutter || true %>,
+      highlightLine: <%= highlightLine || true %>,
+      highlightWord: <%= highlightWord || true %>,
+      readOnly: <%= readOnly || false %>,
+      tabSize: <%= tabSize || 2 %>
+    };
+
+    // Initialize Ace Editor
+    var editor = ace.edit("editor");
+    editor.setTheme(config.theme);
+    editor.setOptions({
+      enableBasicAutocompletion: config.autocomplete,
+      enableLiveAutocompletion: config.autocomplete,
+      enableSnippets: config.snippets,
+      fontSize: config.fontSize,
+      wrap: config.wordWrap,
+      showPrintMargin: config.showMargin,
+      showLineNumbers: config.lineNumbers,
+      showGutter: config.gutter,
+      highlightActiveLine: config.highlightLine,
+      highlightSelectedWord: config.highlightWord,
+      readOnly: config.readOnly,
+      tabSize: config.tabSize
+    });
+
+    // Auto-detect mode using Ace's built-in modelist
+    if (!config.mode && config.fileName) {
+      try {
+        const modelist = ace.require('ace/ext/modelist');
+        const detectedMode = modelist.getModeForPath(config.fileName).mode;
+        editor.session.setMode(detectedMode);
+      } catch (error) {
+        console.warn('Could not auto-detect mode:', error);
+        editor.session.setMode('ace/mode/text');
+      }
+    } else if (config.mode) {
+      editor.session.setMode(config.mode);
+    }
+
+    // Set current editing file info
+    window.currentEditingFile = {
+      filename: config.fileName,
+      filePath: config.filePath,
+      projectId: config.projectId,
+      mode: editor.session.getMode().$id
+    };
+
+    // Expose editor to parent window
+    window.editor = editor;
+
+    // Notify parent when editor is ready
+    window.addEventListener('load', function() {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'editorReady',
+          editor: 'ace',
+          file: window.currentEditingFile
+        }, '*');
+      }
+    });
+
+    // Listen for messages from parent
+    window.addEventListener('message', function(event) {
+      const { type, data } = event.data;
+      
+      switch(type) {
+        case 'setContent':
+          editor.setValue(data.content || '');
+          break;
+        case 'getContent':
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: 'editorContent',
+              content: editor.getValue(),
+              file: window.currentEditingFile
+            }, '*');
+          }
+          break;
+        case 'setTheme':
+          editor.setTheme(data.theme || 'ace/theme/monokai');
+          break;
+        case 'setMode':
+          editor.session.setMode(data.mode || 'ace/mode/javascript');
+          break;
+        case 'setOptions':
+          editor.setOptions(data.options || {});
+          break;
+        case 'saveFile':
+          saveFileContent();
+          break;
+        case 'reloadFile':
+          reloadFileContent();
+          break;
+      }
+    });
+
+    // Save file content function
+    async function saveFileContent() {
+      try {
+        const response = await fetch(`/api/project/${config.projectId}/file`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            path: config.filePath,
+            content: editor.getValue()
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (window.parent !== window) {
+          window.parent.postMessage({
+            type: 'fileSaved',
+            success: data.success,
+            message: data.success ? 'File saved successfully!' : data.error
+          }, '*');
+        }
+      } catch (error) {
+        if (window.parent !== window) {
+          window.parent.postMessage({
+            type: 'fileSaved',
+            success: false,
+            message: 'Error saving file: ' + error.message
+          }, '*');
+        }
+      }
+    }
+
+    // Reload file content function
+    async function reloadFileContent() {
+      try {
+        const response = await fetch(`/api/project/${config.projectId}/file?path=${encodeURIComponent(config.filePath)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          editor.setValue(data.content || '');
+          editor.clearSelection();
+          
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: 'fileReloaded',
+              success: true,
+              message: 'File reloaded successfully!'
+            }, '*');
+          }
+        } else {
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: 'fileReloaded',
+              success: false,
+              message: data.error || 'Error reloading file'
+            }, '*');
+          }
+        }
+      } catch (error) {
+        if (window.parent !== window) {
+          window.parent.postMessage({
+            type: 'fileReloaded',
+            success: false,
+            message: 'Error reloading file: ' + error.message
+          }, '*');
+        }
+      }
+    }
+
+    // Get editor content function
+    function getCode() {
+      return editor.getValue();
+    }
+
+    // Set editor content function  
+    function setCode(content) {
+      editor.setValue(content || '');
+    }
+
+    // Change theme function
+    function setTheme(theme) {
+      editor.setTheme(theme || 'ace/theme/monokai');
+    }
+
+    // Change language mode function
+    function setMode(mode) {
+      editor.session.setMode(mode || 'ace/mode/javascript');
+    }
+  </script>
+
+</body>
+</html>

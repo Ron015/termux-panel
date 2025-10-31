@@ -1,0 +1,303 @@
+<%
+// EJS Helper Functions
+function getLanguageIcon(language) {
+    switch(language) {
+        case 'nodejs': return 'node-js';
+        case 'python': return 'python';
+        case 'bash': return 'terminal';
+        default: return 'code';
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'today';
+    if (diffDays === 2) return 'yesterday';
+    if (diffDays < 7) return `${diffDays - 1} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+}
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=0.75, maximum-scale=1.0, user-scalable=no" />
+  <title>Projects Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body data-theme="<%= settings.theme || 'dark' %>">
+  <div class="app">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="header">
+        <div class="header-left">
+          <div class="logo">
+            <i class="fas fa-code logo-icon"></i>
+            <span>Termux Panel</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="themeToggle" class="icon-btn" title="Toggle Theme">
+            <i class="fas fa-moon"></i>
+          </button>
+          <button class="add-btn" id="addProjectBtn" title="Add Project">
+            <i class="fas fa-plus"></i> New Project
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Search Section -->
+      <div class="search-section">
+        <div class="search-container">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" placeholder="Search projects..." class="search-bar" id="searchInput" />
+        </div>
+        <select class="filter" id="projectFilter">
+          <option value="all">All</option>
+          <option value="nodejs">Node.js</option>
+          <option value="python">Python</option>
+          <option value="bash">Bash</option>
+        </select>
+      </div>
+
+      <!-- Project List -->
+      <main class="projects" id="projectsContainer">
+        <% if (projects.length === 0) { %>
+          <div class="empty-state">
+            <i class="fas fa-folder-open"></i>
+            <h3>No Projects Yet</h3>
+            <p>Create your first project to get started</p>
+          </div>
+        <% } else { %>
+          <% projects.forEach(project => { %>
+            <div class="project-card" onclick="window.location.href='/project/<%= project.id %>'">
+              <div class="project-header">
+                <div class="project-title">
+                  <div class="icon <%= project.language %>-icon">
+                    <i class="fab fa-<%= getLanguageIcon(project.language) %>"></i>
+                  </div>
+                  <div class="project-info">
+                    <h2><%= project.name %></h2>
+                    <p>Created <%= formatDate(project.createdAt) %></p>
+                  </div>
+                </div>
+                <div class="status-indicator status-<%= project.status %>">
+                  <%= project.status %>
+                </div>
+              </div>
+              <div class="project-meta">
+                <span class="project-type"><%= project.language %></span>
+                <div class="project-actions">
+                  <form action="/delete-project/<%= project.id %>" method="POST" style="display: inline;" onclick="event.stopPropagation();">
+                    <button type="submit" class="action-btn delete-btn" title="Delete Project" onclick="return confirm('Are you sure you want to delete <%= project.name %>?')">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        <% } %>
+      </main>
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Add Project Modal -->
+  <div class="modal" id="addProjectModal">
+    <div class="modal-header">
+      <div class="modal-title">Create New Project</div>
+      <button class="close-modal" id="closeModal"><i class="fas fa-times"></i></button>
+    </div>
+    <form action="/create-project" method="POST" id="projectForm">
+      <div class="form-group">
+        <label for="projectName">Project Name</label>
+        <input type="text" id="projectName" name="name" class="form-control" placeholder="Enter project name" required>
+      </div>
+      <div class="form-group">
+        <label for="projectType">Project Type</label>
+        <select id="projectType" name="language" class="form-control" required>
+          <option value="">Select project type</option>
+          <option value="nodejs">Node.js</option>
+          <option value="python">Python</option>
+          <option value="bash">Bash</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="cancelProject">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Project</button>
+      </div>
+    </form>
+  </div>
+  <footer class="copyright-footer">
+    <div class="footer-content">
+        <div class="copyright-text">
+            &copy; 2025 Ron. All rights reserved.
+        </div>
+    </div>
+</footer>
+
+  <script>
+  // DOM Elements
+  const themeToggle = document.getElementById('themeToggle');
+  const addProjectBtn = document.getElementById('addProjectBtn');
+  const addProjectModal = document.getElementById('addProjectModal');
+  const closeModal = document.getElementById('closeModal');
+  const cancelProject = document.getElementById('cancelProject');
+  const projectForm = document.getElementById('projectForm');
+  const projectsContainer = document.getElementById('projectsContainer');
+  const searchInput = document.getElementById('searchInput');
+  const projectFilter = document.getElementById('projectFilter');
+  const overlay = document.getElementById('overlay');
+
+  // Projects data from EJS
+  const projects = <%- JSON.stringify(projects) %>;
+
+  // Initialize the app
+  function init() {
+    setupEventListeners();
+  }
+
+  // Set up event listeners
+  function setupEventListeners() {
+    // Theme toggle
+    themeToggle.addEventListener('click', toggleTheme);
+
+    // Project modal
+    addProjectBtn.addEventListener('click', openAddProjectModal);
+    closeModal.addEventListener('click', closeAddProjectModal);
+    cancelProject.addEventListener('click', closeAddProjectModal);
+    
+    // Search and filter
+    searchInput.addEventListener('input', handleSearch);
+    projectFilter.addEventListener('change', handleFilter);
+    
+    // Close modal on overlay click
+    overlay.addEventListener('click', closeAddProjectModal);
+  }
+
+  // Handle search and filter together
+  function handleSearchAndFilter() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const filterValue = projectFilter.value;
+    const projectCards = document.querySelectorAll('.project-card');
+    
+    projectCards.forEach(card => {
+      const projectName = card.querySelector('h2').textContent.toLowerCase();
+      const projectType = card.querySelector('.project-type').textContent.toLowerCase();
+      
+      const matchesSearch = projectName.includes(searchTerm);
+      const matchesFilter = filterValue === 'all' || projectType === filterValue;
+      
+      if (matchesSearch && matchesFilter) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  // Handle search
+  function handleSearch() {
+    handleSearchAndFilter();
+  }
+
+  // Handle filter
+  function handleFilter() {
+    handleSearchAndFilter();
+  }
+
+  // Toggle theme
+  function toggleTheme() {
+    const currentTheme = document.body.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.body.setAttribute('data-theme', newTheme);
+    
+    // Update theme toggle icon
+    const themeIcon = themeToggle.querySelector('i');
+    themeIcon.className = newTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+    
+    // Save theme preference
+    localStorage.setItem('theme', newTheme);
+  }
+  function showToast(message, type = 'info') {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast');
+        existingToasts.forEach(toast => toast.remove());
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation' : 'info'}"></i>
+            <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Show toast
+        setTimeout(() => toast.classList.add('show'), 100);
+        
+        // Hide toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+  // Open add project modal
+  function openAddProjectModal() {
+    addProjectModal.classList.add('active');
+    overlay.classList.add('active');
+  }
+
+  // Close add project modal
+  function closeAddProjectModal() {
+    addProjectModal.classList.remove('active');
+    overlay.classList.remove('active');
+    projectForm.reset();
+  }
+
+  // Load saved theme preference
+  function loadThemePreference() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.body.setAttribute('data-theme', savedTheme);
+      const themeIcon = themeToggle.querySelector('i');
+      themeIcon.className = savedTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+    }
+  }
+
+  // Initialize the app when DOM is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    loadThemePreference();
+    init();
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get('toast');
+    const type = params.get('type') || 'info';
+
+    if (message) {
+      showToast(message, type);
+
+      // 1 sec baad URL params hata do 😎
+      setTimeout(() => {
+        const url = window.location.origin + window.location.pathname;
+        history.replaceState({}, document.title, url);
+      }, 1000);
+    }
+  });
+</script>
+</body>
+</html>

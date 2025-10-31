@@ -1,0 +1,38 @@
+{
+  "name": "termux-panel",
+  "version": "1.0.0",
+  "description": "🔥 Termux GUI Mode — Best Interactive Panel for TERMUX Users 🧠💻",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+  },
+  "author": "Ron",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ron015/Termux-Panel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ron015/Termux-Panel/issues"
+  },
+  "homepage": "https://github.com/ron015/Termux-Panel#readme",
+  "keywords": [
+    "termux",
+    "panel",
+    "express",
+    "socket.io",
+    "nodejs",
+    "ejs",
+    "gui",
+    "tool",
+    "ron"
+  ],
+  "dependencies": {
+    "socket.io": "^4.8.1",
+    "adm-zip": "^0.5.16",
+    "nedb-promises": "^5.0.0",
+    "multer": "^2.0.2",
+    "express": "^5.1.0",
+    "ejs": "^3.1.10"
+  }
+}
