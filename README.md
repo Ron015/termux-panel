@@ -163,7 +163,7 @@ pkg update && pkg upgrade -y && pkg install nodejs git -y && git clone https://g
 
 ```bash
 # 🎯 COPY-PASTE THIS SINGLE COMMAND:
-curl -sL https://raw.githubusercontent.com/yourusername/termux-panel/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/ron015/termux-panel/master/install.sh | bash
 ```
 
 📦 What Happens Automatically:
@@ -343,7 +343,7 @@ Ready to supercharge your Termux experience? 🚀
 ```bash
 # Start your coding journey today!
 #🚀 ONE COMMAND TO RULE THEM ALL:
-curl -sL https://raw.githubusercontent.com/ron015/termux-panel/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/ron015/termux-panel/master/install.sh | bash
 ```
 
 Happy Coding! 🎉
